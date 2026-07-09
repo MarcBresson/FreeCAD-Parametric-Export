@@ -1,0 +1,56 @@
+# 
+# Purpose: This file keeps temporary, generated, local, and sensitive files out of Git history.
+# Python best practice: ignore virtual environments, caches, logs, local secrets, large data/artifacts,
+# and notebook checkpoints; keep source code, reproducible config, and dependency manifests tracked.
+#
+# Important: .gitignore does not untrack files that were already committed.
+# Stop tracking a now-ignored file (keep it locally):
+#   git rm --cached path/to/file
+#   git commit -m "Stop tracking ignored file"
+# Intentionally track an ignored file anyway:
+#   git add -f path/to/file
+#   git commit -m "Force-track ignored file"
+
+# ==============================
+# Byte-compiled and cache
+# ==============================
+**__pycache__/
+.*_cache
+
+# ==============================
+# Dependencies
+# ==============================
+**.venv/
+
+# ==============================
+# OS generated files
+# ==============================
+**.DS_Store
+Thumbs.db
+
+# ==============================
+# Notebooks
+# ==============================
+**.ipynb_checkpoints
+**.ipynb
+
+# ==============================
+# Coverage and tests
+# ==============================
+.coverage
+tests/.coverage.*
+
+# ==============================
+# Build artifacts
+# ==============================
+**.egg-info
+lib/*/build
+.next/
+dist/
+build/
+out/
+
+# ==============================
+# Misc
+# ==============================
+**.ignore.*
