@@ -132,8 +132,9 @@ class GridParamsDialog(QtWidgets.QDialog):
         items_split.addLayout(items_panel, stretch=1)
 
         detail_panel = QtWidgets.QVBoxLayout()
-        detail_panel.addWidget(QtWidgets.QLabel("Item name (blank = use default template above)"))
+        detail_panel.addWidget(QtWidgets.QLabel("Item naming template (blank = use default template above)"))
         self.item_name_template_edit = QtWidgets.QLineEdit()
+        self.item_name_template_edit.setPlaceholderText("{base_name} - {ParamName}")
         self.item_name_template_edit.editingFinished.connect(self._refresh_preview)
         detail_panel.addWidget(self.item_name_template_edit)
 
