@@ -49,10 +49,18 @@ def create_config_object(doc, label=None):
     obj = doc.addObject("App::FeaturePython", CONFIG_OBJECT_BASE_NAME)
     obj.Proxy = ConfigContainerProxy()
     obj.addProperty(
-        "App::PropertyString", CONFIG_PROP, "GridParams", "Serialized GridParams configuration (JSON)"
+        "App::PropertyString",
+        CONFIG_PROP,
+        "GridParams",
+        "Serialized GridParams configuration (JSON)",
     )
     obj.addProperty(
-        "App::PropertyBool", CONFIG_MARKER_PROP, "GridParams", "Internal marker; do not edit", 8
+        "App::PropertyBool",
+        CONFIG_MARKER_PROP,
+        "GridParams",
+        "Internal marker; do not edit",
+        read_only=True,
+        hidden=True,
     )
     setattr(obj, CONFIG_MARKER_PROP, True)
     obj.Label = label or _suggest_label(doc)
