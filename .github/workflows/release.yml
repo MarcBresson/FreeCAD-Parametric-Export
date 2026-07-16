@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.xml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read and validate version from package.xml
+        id: version
+        run: |
+          VERSION=$(python3 - <<'EOF'
+          import re, sys
+          import xml.etree.ElementTree as ET
+
+          NS = {"pm": "https://wiki.freecad.org/Package_Metadata"}
+          root = ET.parse("package.xml").getroot()
+          version = root.find("pm:version", NS).text.strip()
+
+          if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?", version):
+              sys.exit(f"invalid version in package.xml: {version!r}")
+
+          print(version)
+          EOF
+          )
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if this version is already tagged
+        id: check
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release archive
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          ARCHIVE_NAME="GridParamsExport-${{ steps.version.outputs.version }}.zip"
+          git archive --format=zip -o "$ARCHIVE_NAME" HEAD
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
+
+      - name: Create and push tag
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Create GitHub release
+        if: steps.check.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" "$ARCHIVE_NAME" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --generate-notes

@@ -16,7 +16,17 @@ class FakeObject:
         self.Proxy = None
         self.ViewObject = FakeViewObject()
 
-    def addProperty(self, prop_type, name, group="", doc="", *flags):
+    def addProperty(
+        self,
+        prop_type,
+        name,
+        group="",
+        doc="",
+        attr=0,
+        read_only=False,
+        hidden=False,
+        **kwargs,
+    ):
         if not hasattr(self, name):
             setattr(self, name, False if "Bool" in prop_type else "")
         return self

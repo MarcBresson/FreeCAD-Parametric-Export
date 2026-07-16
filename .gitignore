@@ -1,4 +1,4 @@
-# 
+#
 # Purpose: This file keeps temporary, generated, local, and sensitive files out of Git history.
 # Python best practice: ignore virtual environments, caches, logs, local secrets, large data/artifacts,
 # and notebook checkpoints; keep source code, reproducible config, and dependency manifests tracked.
