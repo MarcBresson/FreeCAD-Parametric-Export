@@ -7,7 +7,7 @@ messaging that already lives on the "Run Export" button.
 
 from pathlib import Path
 
-from PySide6 import QtCore, QtWidgets
+from PySide import QtCore, QtWidgets
 
 from freecad.gridparams.core.config import expand_config
 from freecad.gridparams.core.variation import find_duplicate_names

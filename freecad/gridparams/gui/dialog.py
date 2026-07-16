@@ -4,7 +4,7 @@ All expansion/naming/export-planning logic is delegated to gridparams.core -- th
 module only translates between Qt widgets and that core's dataclasses.
 """
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from PySide import QtCore, QtGui, QtWidgets
 
 from . import persistence
 from freecad.gridparams.core.config import (
