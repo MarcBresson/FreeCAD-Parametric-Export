@@ -5,14 +5,14 @@ import FreeCADGui as Gui
 
 from freecad.gridparams import ICON_DIR
 
-COMMAND_NAME = "GridParamsExport_OpenDialog"
+COMMAND_NAME = "GridParamsExport_NewConfig"
 
 
-class CmdOpenGridParamsDialog:
+class CmdNewGridParamsConfig:
     def GetResources(self):
         return {
-            "MenuText": "Grid Export...",
-            "ToolTip": "Define a parameter grid over a VarSet and batch-export the resulting variations",
+            "MenuText": "New Grid Export Config...",
+            "ToolTip": "Create a new parameter grid over a VarSet and batch-export the resulting variations",
             "Pixmap": os.path.join(ICON_DIR, "gridparams.svg"),
         }
 
@@ -20,11 +20,16 @@ class CmdOpenGridParamsDialog:
         return App.ActiveDocument is not None
 
     def Activated(self):
+        from . import persistence
         from .dialog import GridParamsDialog
 
-        dialog = GridParamsDialog(App.ActiveDocument, parent=Gui.getMainWindow())
+        doc = App.ActiveDocument
+        obj = persistence.create_config_object(doc)
+        doc.recompute()
+
+        dialog = GridParamsDialog(doc, obj.Name, parent=Gui.getMainWindow())
         dialog.show()
 
 
 def register():
-    Gui.addCommand(COMMAND_NAME, CmdOpenGridParamsDialog())
+    Gui.addCommand(COMMAND_NAME, CmdNewGridParamsConfig())
