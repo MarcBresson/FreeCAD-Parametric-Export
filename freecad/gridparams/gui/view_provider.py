@@ -44,7 +44,7 @@ def _edit_config(obj):
 
 
 def _export_using_config(obj):
-    from PySide6 import QtWidgets
+    from PySide import QtWidgets
 
     from . import export_helpers
 
