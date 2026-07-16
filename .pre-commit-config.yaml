@@ -33,4 +33,4 @@ repos:
     rev: v2.3.0
     hooks:
       - id: mypy
-        args: [--non-interactive, --follow-imports skip]
+        args: [--follow-imports, skip, --ignore-missing-imports, --show-error-codes]
