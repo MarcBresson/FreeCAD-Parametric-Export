@@ -9,7 +9,7 @@ which shape produced it.
 import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from .grid import ParameterGrid
 from .naming import resolve_name
@@ -65,6 +65,7 @@ class ExportSettings:
     combine: bool = False
     selected_object_names: list[str] = field(default_factory=list)
     last_export_folder: str = ""
+    body_name_placement: Literal["append", "prepend"] = "append"  # only relevant when combine is False
 
 
 @dataclass
@@ -105,6 +106,7 @@ def config_to_json(config: GridConfig) -> str:
             "combine": config.export_settings.combine,
             "selected_object_names": list(config.export_settings.selected_object_names),
             "last_export_folder": config.export_settings.last_export_folder,
+            "body_name_placement": config.export_settings.body_name_placement,
         },
     }
     return json.dumps(data, indent=2)
@@ -125,6 +127,7 @@ def config_from_json(raw: str) -> GridConfig:
         combine=export_data.get("combine", False),
         selected_object_names=list(export_data.get("selected_object_names", [])),
         last_export_folder=export_data.get("last_export_folder", ""),
+        body_name_placement=export_data.get("body_name_placement", "append"),
     )
     return GridConfig(
         base_name=data.get("base_name", ""),

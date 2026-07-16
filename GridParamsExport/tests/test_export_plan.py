@@ -35,3 +35,23 @@ def test_single_selected_object_is_never_split_even_if_combine_is_false():
     jobs = build_export_jobs_for_variation(variation, settings)
     assert len(jobs) == 1
     assert jobs[0].output_stem == "XS"
+
+
+def test_prepend_body_name_puts_body_before_variation_name():
+    variation = Variation(name="XS", params={})
+    settings = ExportSettings(
+        combine=False, selected_object_names=["Body001", "Body003"], body_name_placement="prepend"
+    )
+    jobs = build_export_jobs_for_variation(variation, settings)
+    assert jobs[0].output_stem == "Body001 - XS"
+    assert jobs[1].output_stem == "Body003 - XS"
+
+
+def test_prepend_body_name_has_no_effect_when_not_split():
+    variation = Variation(name="XS", params={})
+    settings = ExportSettings(
+        combine=False, selected_object_names=["Body001"], body_name_placement="prepend"
+    )
+    jobs = build_export_jobs_for_variation(variation, settings)
+    assert len(jobs) == 1
+    assert jobs[0].output_stem == "XS"

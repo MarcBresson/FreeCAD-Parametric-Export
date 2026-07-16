@@ -4,15 +4,13 @@ All expansion/naming/export-planning logic is delegated to freecad.gridparams.co
 module only translates between Qt widgets and that core's dataclasses.
 """
 
-from pathlib import Path
-
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from freecad.gridparams.core.config import ConfigSchemaError, ExportSettings, GridConfig, GridItem, expand_config
 from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
 
-from . import persistence, runner, selection
+from . import export_helpers, persistence, selection
 
 _VALUE_PLACEHOLDERS = {
     "Fixed": "e.g. 12",
@@ -69,16 +67,98 @@ def _describe_param_value(value):
     return "Fixed", str(value)
 
 
-class GridParamsDialog(QtWidgets.QDialog):
-    def __init__(self, doc, parent=None):
+_EXPORTABLE_BASE_TYPES = ("PartDesign::Body", "Part::Feature")
+
+
+class VariationsDialog(QtWidgets.QDialog):
+    """Read-only table of every expanded variation, with duplicate names highlighted."""
+
+    def __init__(self, variations, duplicate_names, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Variations Preview")
+        self.resize(600, 400)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        param_keys = sorted({key for variation in variations for key in variation.params})
+        table = QtWidgets.QTableWidget(len(variations), 1 + len(param_keys))
+        table.setHorizontalHeaderLabels(["Name"] + param_keys)
+        table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        for row, variation in enumerate(variations):
+            name_item = QtWidgets.QTableWidgetItem(variation.name)
+            if variation.name in duplicate_names:
+                name_item.setBackground(QtGui.QColor("#c0392b"))
+            table.setItem(row, 0, name_item)
+            for col, key in enumerate(param_keys, start=1):
+                table.setItem(row, col, QtWidgets.QTableWidgetItem(str(variation.params.get(key, ""))))
+        layout.addWidget(table)
+
+        close_btn = QtWidgets.QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn, alignment=QtCore.Qt.AlignRight)
+
+
+class ObjectPickerDialog(QtWidgets.QDialog):
+    """Pick bodies to add to the export list -- from a filtered list, or by typing any reference."""
+
+    def __init__(self, doc, candidates, parent=None):
         super().__init__(parent)
         self.doc = doc
+        self.setWindowTitle("Add Objects")
+        self._resolved_manual_name = None
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(QtWidgets.QLabel("Solid/body objects in this document:"))
+
+        self.list_widget = QtWidgets.QListWidget()
+        self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        for obj in candidates:
+            item = QtWidgets.QListWidgetItem(obj.Label)
+            item.setData(QtCore.Qt.UserRole, obj.Name)
+            self.list_widget.addItem(item)
+        layout.addWidget(self.list_widget)
+
+        manual_row = QtWidgets.QHBoxLayout()
+        manual_row.addWidget(QtWidgets.QLabel("Or reference by name/label:"))
+        self.manual_edit = QtWidgets.QLineEdit()
+        self.manual_edit.setPlaceholderText("e.g. Compound001 (bypasses the filter above)")
+        manual_row.addWidget(self.manual_edit, stretch=1)
+        layout.addLayout(manual_row)
+
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        )
+        buttons.accepted.connect(self._on_accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def _on_accept(self):
+        text = self.manual_edit.text().strip()
+        if text:
+            obj = self.doc.getObject(text) or next(iter(self.doc.getObjectsByLabel(text)), None)
+            if obj is None:
+                QtWidgets.QMessageBox.warning(self, "GridParams", f"No object found named or labeled {text!r}.")
+                return
+            self._resolved_manual_name = obj.Name
+        self.accept()
+
+    def selected_names(self):
+        names = [item.data(QtCore.Qt.UserRole) for item in self.list_widget.selectedItems()]
+        if self._resolved_manual_name and self._resolved_manual_name not in names:
+            names.append(self._resolved_manual_name)
+        return names
+
+
+class GridParamsDialog(QtWidgets.QDialog):
+    def __init__(self, doc, config_object_name, parent=None):
+        super().__init__(parent)
+        self.doc = doc
+        self.config_object_name = config_object_name
         self._selected_object_names = []
-        self.setWindowTitle("Grid Params Export")
         self.resize(900, 650)
 
+        config_obj = self._require_config_object()
         try:
-            config = persistence.load_config(doc) or GridConfig(base_name=doc.Name)
+            config = persistence.load_config(config_obj) or GridConfig(base_name=config_obj.Label)
         except ConfigSchemaError as exc:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -87,13 +167,26 @@ class GridParamsDialog(QtWidgets.QDialog):
                 "Starting from a blank configuration instead -- the previously saved one is "
                 "left untouched in the document until you explicitly Save over it.",
             )
-            config = GridConfig(base_name=doc.Name)
+            config = GridConfig(base_name=config_obj.Label)
         self._items = list(config.items)
 
+        self.setWindowTitle(f"Grid Params Export — {config_obj.Label}")
         self._build_ui()
         self._load_from_config(config)
 
+    def _require_config_object(self):
+        obj = persistence.get_config_object(self.doc, self.config_object_name)
+        if obj is None:
+            raise RuntimeError(f"GridParams config object {self.config_object_name!r} no longer exists.")
+        return obj
+
     # -- UI construction -------------------------------------------------
+
+    def _make_separator(self):
+        frame = QtWidgets.QFrame()
+        frame.setFrameShape(QtWidgets.QFrame.HLine)
+        frame.setFrameShadow(QtWidgets.QFrame.Sunken)
+        return frame
 
     def _build_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
@@ -107,10 +200,15 @@ class GridParamsDialog(QtWidgets.QDialog):
             [obj.Name for obj in self.doc.Objects if obj.TypeId == "App::VarSet"]
         )
         self.varset_combo.currentTextChanged.connect(self._refresh_param_name_choices)
+        self.varset_combo.currentTextChanged.connect(self._refresh_preview)
+        self.base_name_edit.textChanged.connect(self._refresh_preview)
+        self.naming_template_edit.textChanged.connect(self._refresh_preview)
         header_form.addRow("Base name", self.base_name_edit)
         header_form.addRow("Default naming template", self.naming_template_edit)
         header_form.addRow("VarSet", self.varset_combo)
         layout.addLayout(header_form)
+
+        layout.addWidget(self._make_separator())
 
         items_split = QtWidgets.QHBoxLayout()
 
@@ -135,7 +233,8 @@ class GridParamsDialog(QtWidgets.QDialog):
         detail_panel.addWidget(QtWidgets.QLabel("Item naming template (blank = use default template above)"))
         self.item_name_template_edit = QtWidgets.QLineEdit()
         self.item_name_template_edit.setPlaceholderText("{base_name} - {ParamName}")
-        self.item_name_template_edit.editingFinished.connect(self._refresh_preview)
+        self.item_name_template_edit.textChanged.connect(self._refresh_preview)
+        self.item_name_template_edit.textChanged.connect(self._on_item_name_template_changed)
         detail_panel.addWidget(self.item_name_template_edit)
 
         self.params_table = QtWidgets.QTableWidget(0, 3)
@@ -155,40 +254,68 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         layout.addLayout(items_split)
 
-        preview_header = QtWidgets.QHBoxLayout()
-        preview_header.addWidget(QtWidgets.QLabel("Preview"))
-        refresh_btn = QtWidgets.QPushButton("Refresh Preview")
-        refresh_btn.clicked.connect(self._refresh_preview)
-        preview_header.addWidget(refresh_btn)
-        preview_header.addStretch(1)
-        layout.addLayout(preview_header)
-
-        self.preview_table = QtWidgets.QTableWidget(0, 1)
-        self.preview_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        layout.addWidget(self.preview_table)
-
+        status_row = QtWidgets.QHBoxLayout()
         self.status_label = QtWidgets.QLabel("")
-        layout.addWidget(self.status_label)
+        status_row.addWidget(self.status_label)
+        show_variations_btn = QtWidgets.QPushButton("Show Variations")
+        show_variations_btn.clicked.connect(self._show_variations_dialog)
+        status_row.addWidget(show_variations_btn)
+        status_row.addStretch(1)
+        layout.addLayout(status_row)
+
+        layout.addWidget(self._make_separator())
 
         export_group = QtWidgets.QGroupBox("Export")
         export_layout = QtWidgets.QVBoxLayout(export_group)
 
-        selection_row = QtWidgets.QHBoxLayout()
-        use_selection_btn = QtWidgets.QPushButton("Use Current Selection")
-        use_selection_btn.clicked.connect(self._use_current_selection)
-        selection_row.addWidget(use_selection_btn)
-        self.selected_objects_label = QtWidgets.QLabel("(none selected)")
-        selection_row.addWidget(self.selected_objects_label, stretch=1)
-        export_layout.addLayout(selection_row)
+        self.objects_table = QtWidgets.QTableWidget(0, 1)
+        self.objects_table.setHorizontalHeaderLabels(["Object"])
+        self.objects_table.horizontalHeader().setStretchLastSection(True)
+        self.objects_table.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.objects_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        export_layout.addWidget(self.objects_table)
+
+        objects_buttons = QtWidgets.QHBoxLayout()
+        add_objects_btn = QtWidgets.QPushButton("+")
+        add_objects_btn.clicked.connect(self._add_objects)
+        remove_objects_btn = QtWidgets.QPushButton("-")
+        remove_objects_btn.clicked.connect(self._remove_selected_objects)
+        from_selection_btn = QtWidgets.QPushButton("From Selection")
+        from_selection_btn.clicked.connect(self._use_current_selection)
+        objects_buttons.addWidget(add_objects_btn)
+        objects_buttons.addWidget(remove_objects_btn)
+        objects_buttons.addWidget(from_selection_btn)
+        objects_buttons.addStretch(1)
+        export_layout.addLayout(objects_buttons)
 
         combine_row = QtWidgets.QHBoxLayout()
         self.combine_radio = QtWidgets.QRadioButton("Combine into one file")
         self.separate_radio = QtWidgets.QRadioButton("One file per object")
         self.separate_radio.setChecked(True)
+        self.export_mode_group = QtWidgets.QButtonGroup(self)
+        self.export_mode_group.addButton(self.combine_radio)
+        self.export_mode_group.addButton(self.separate_radio)
         combine_row.addWidget(self.combine_radio)
         combine_row.addWidget(self.separate_radio)
         combine_row.addStretch(1)
         export_layout.addLayout(combine_row)
+
+        body_name_row = QtWidgets.QHBoxLayout()
+        body_name_row.addSpacing(20)
+        self.prepend_body_radio = QtWidgets.QRadioButton("Prepend body name to exported variation names")
+        self.append_body_radio = QtWidgets.QRadioButton("Append body name to exported variation names")
+        self.append_body_radio.setChecked(True)
+        self.body_name_group = QtWidgets.QButtonGroup(self)
+        self.body_name_group.addButton(self.prepend_body_radio)
+        self.body_name_group.addButton(self.append_body_radio)
+        body_name_row.addWidget(self.prepend_body_radio)
+        body_name_row.addWidget(self.append_body_radio)
+        body_name_row.addStretch(1)
+        export_layout.addLayout(body_name_row)
+
+        self.combine_radio.toggled.connect(self._update_body_name_radios_enabled)
+        self.separate_radio.toggled.connect(self._update_body_name_radios_enabled)
+        self._update_body_name_radios_enabled()
 
         folder_row = QtWidgets.QHBoxLayout()
         self.output_folder_edit = QtWidgets.QLineEdit()
@@ -224,21 +351,34 @@ class GridParamsDialog(QtWidgets.QDialog):
             self.varset_combo.setCurrentIndex(index)
 
         self.items_list.clear()
-        for item in self._items:
-            self.items_list.addItem(self._item_label(item))
+        for index, item in enumerate(self._items):
+            self.items_list.addItem(self._item_label(index, item))
         if self._items:
             self.items_list.setCurrentRow(0)
 
         self._selected_object_names = list(config.export_settings.selected_object_names)
-        self._update_selected_objects_label()
+        self._refresh_objects_table()
         self.combine_radio.setChecked(config.export_settings.combine)
         self.separate_radio.setChecked(not config.export_settings.combine)
         self.output_folder_edit.setText(config.export_settings.last_export_folder)
+        if config.export_settings.body_name_placement == "prepend":
+            self.prepend_body_radio.setChecked(True)
+        else:
+            self.append_body_radio.setChecked(True)
+        self._update_body_name_radios_enabled()
 
         self._refresh_preview()
 
-    def _item_label(self, item):
-        return item.name_template or "(uses default template)"
+    def _item_label(self, index, item):
+        return self._format_item_label(index, item.name_template)
+
+    def _format_item_label(self, index, name_template):
+        return f"{index + 1}. {name_template or '(uses default template)'}"
+
+    def _on_item_name_template_changed(self, text):
+        row = self.items_list.currentRow()
+        if 0 <= row < self.items_list.count():
+            self.items_list.item(row).setText(self._format_item_label(row, text.strip() or None))
 
     # -- Item list management ---------------------------------------------
 
@@ -252,11 +392,16 @@ class GridParamsDialog(QtWidgets.QDialog):
             self._apply_item_to_widgets(self._items[row])
         self._refresh_preview()
 
+    def _renumber_items(self):
+        for index in range(self.items_list.count()):
+            self.items_list.item(index).setText(self._item_label(index, self._items[index]))
+
     def _add_item(self):
         new_item = GridItem(params={})
         self._items.append(new_item)
-        self.items_list.addItem(self._item_label(new_item))
+        self.items_list.addItem(self._item_label(len(self._items) - 1, new_item))
         self.items_list.setCurrentRow(len(self._items) - 1)
+        self._refresh_preview()
 
     def _duplicate_item(self):
         row = self.items_list.currentRow()
@@ -266,8 +411,10 @@ class GridParamsDialog(QtWidgets.QDialog):
         original = self._items[row]
         clone = GridItem(params=dict(original.params), name_template=original.name_template)
         self._items.insert(row + 1, clone)
-        self.items_list.insertItem(row + 1, self._item_label(clone))
+        self.items_list.insertItem(row + 1, self._item_label(row + 1, clone))
+        self._renumber_items()
         self.items_list.setCurrentRow(row + 1)
+        self._refresh_preview()
 
     def _remove_item(self):
         row = self.items_list.currentRow()
@@ -278,6 +425,8 @@ class GridParamsDialog(QtWidgets.QDialog):
             return
         del self._items[row]
         self.items_list.takeItem(row)
+        self._renumber_items()
+        self._refresh_preview()
 
     # -- Parameter table management ----------------------------------------
 
@@ -329,14 +478,17 @@ class GridParamsDialog(QtWidgets.QDialog):
         name_combo.setEditable(True)
         name_combo.addItems(self._varset_property_names())
         name_combo.setCurrentText(name)
+        name_combo.currentTextChanged.connect(self._refresh_preview)
         self.params_table.setCellWidget(row, 0, name_combo)
 
         kind_combo = QtWidgets.QComboBox()
         kind_combo.addItems(["Fixed", "List", "LinSpace", "Range"])
         kind_combo.setCurrentText(kind)
+        kind_combo.currentTextChanged.connect(self._refresh_preview)
         self.params_table.setCellWidget(row, 1, kind_combo)
 
         value_edit = QtWidgets.QLineEdit(value_text)
+        value_edit.textChanged.connect(self._refresh_preview)
         self.params_table.setCellWidget(row, 2, value_edit)
 
         def _update_placeholder(new_kind):
@@ -344,6 +496,7 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         kind_combo.currentTextChanged.connect(_update_placeholder)
         _update_placeholder(kind)
+        self._refresh_preview()
 
     def _remove_selected_param_row(self):
         rows = sorted({index.row() for index in self.params_table.selectedIndexes()}, reverse=True)
@@ -366,6 +519,7 @@ class GridParamsDialog(QtWidgets.QDialog):
                 combine=self.combine_radio.isChecked(),
                 selected_object_names=list(self._selected_object_names),
                 last_export_folder=self.output_folder_edit.text(),
+                body_name_placement="prepend" if self.prepend_body_radio.isChecked() else "append",
             ),
         )
 
@@ -374,31 +528,23 @@ class GridParamsDialog(QtWidgets.QDialog):
             config = self._build_config_from_widgets()
             variations = expand_config(config)
         except Exception as exc:
-            self.preview_table.setRowCount(0)
             self.status_label.setText(f"Error: {exc}")
             return
 
-        duplicates = set(find_duplicate_names(variations))
-        param_keys = sorted({key for variation in variations for key in variation.params})
-
-        self.preview_table.setColumnCount(1 + len(param_keys))
-        self.preview_table.setHorizontalHeaderLabels(["Name"] + param_keys)
-        self.preview_table.setRowCount(len(variations))
-        for row, variation in enumerate(variations):
-            name_item = QtWidgets.QTableWidgetItem(variation.name)
-            if variation.name in duplicates:
-                name_item.setBackground(QtGui.QColor("#c0392b"))
-            self.preview_table.setItem(row, 0, name_item)
-            for col, key in enumerate(param_keys, start=1):
-                value_item = QtWidgets.QTableWidgetItem(str(variation.params.get(key, "")))
-                self.preview_table.setItem(row, col, value_item)
-
-        if duplicates:
-            self.status_label.setText(
-                f"{len(variations)} variation(s) -- DUPLICATE NAMES: {', '.join(sorted(duplicates))}"
-            )
+        if find_duplicate_names(variations):
+            self.status_label.setText("Duplicated names for some variations")
         else:
             self.status_label.setText(f"{len(variations)} variation(s)")
+
+    def _show_variations_dialog(self):
+        try:
+            config = self._build_config_from_widgets()
+            variations = expand_config(config)
+        except Exception as exc:
+            QtWidgets.QMessageBox.critical(self, "GridParams", f"Error: {exc}")
+            return
+        duplicates = set(find_duplicate_names(variations))
+        VariationsDialog(variations, duplicates, self).exec()
 
     # -- Export selection ------------------------------------------------
 
@@ -408,17 +554,40 @@ class GridParamsDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.warning(self, "GridParams", "Nothing selected in the 3D view / tree.")
             return
         self._selected_object_names = names
-        self._update_selected_objects_label()
+        self._refresh_objects_table()
 
-    def _update_selected_objects_label(self):
-        if not self._selected_object_names:
-            self.selected_objects_label.setText("(none selected)")
-            return
-        labels = []
-        for name in self._selected_object_names:
+    def _refresh_objects_table(self):
+        self.objects_table.setRowCount(len(self._selected_object_names))
+        for row, name in enumerate(self._selected_object_names):
             obj = self.doc.getObject(name)
-            labels.append(obj.Label if obj is not None else f"{name} (missing)")
-        self.selected_objects_label.setText(", ".join(labels))
+            label = obj.Label if obj is not None else f"{name} (missing)"
+            self.objects_table.setItem(row, 0, QtWidgets.QTableWidgetItem(label))
+
+    def _add_objects(self):
+        existing = set(self._selected_object_names)
+        candidates = [
+            obj for obj in self.doc.Objects
+            if obj.Name not in existing
+            and not persistence.is_config_object(obj)
+            and any(obj.isDerivedFrom(t) for t in _EXPORTABLE_BASE_TYPES)
+        ]
+        picker = ObjectPickerDialog(self.doc, candidates, self)
+        if picker.exec() == QtWidgets.QDialog.Accepted:
+            for name in picker.selected_names():
+                if name not in self._selected_object_names:
+                    self._selected_object_names.append(name)
+            self._refresh_objects_table()
+
+    def _remove_selected_objects(self):
+        rows = sorted({index.row() for index in self.objects_table.selectedIndexes()}, reverse=True)
+        for row in rows:
+            del self._selected_object_names[row]
+        self._refresh_objects_table()
+
+    def _update_body_name_radios_enabled(self):
+        enabled = self.separate_radio.isChecked()
+        self.prepend_body_radio.setEnabled(enabled)
+        self.append_body_radio.setEnabled(enabled)
 
     def _browse_folder(self):
         folder = QtWidgets.QFileDialog.getExistingDirectory(
@@ -431,52 +600,20 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _on_save(self):
         config = self._build_config_from_widgets()
-        persistence.save_config(self.doc, config)
+        persistence.save_config(self._require_config_object(), config)
         QtWidgets.QMessageBox.information(self, "GridParams", "Configuration saved to document.")
 
     def _on_run_export(self):
         config = self._build_config_from_widgets()
-        variations = expand_config(config)
-        duplicates = find_duplicate_names(variations)
-        if duplicates:
+        if not self.combine_radio.isChecked() and not (
+            self.prepend_body_radio.isChecked() or self.append_body_radio.isChecked()
+        ):
             QtWidgets.QMessageBox.critical(
-                self, "GridParams", f"Duplicate variation name(s): {', '.join(duplicates)}"
+                self,
+                "GridParams",
+                "Choose whether to prepend or append the body name when exporting one file per object.",
             )
             return
-        if not config.export_settings.selected_object_names:
-            QtWidgets.QMessageBox.critical(self, "GridParams", "Select at least one object to export first.")
-            return
-        output_folder = Path(self.output_folder_edit.text())
-        if not output_folder.is_dir():
-            QtWidgets.QMessageBox.critical(self, "GridParams", f"Export folder does not exist: {output_folder}")
-            return
 
-        persistence.save_config(self.doc, config)
-
-        progress = QtWidgets.QProgressDialog(
-            "Exporting variations...", "Cancel", 0, len(variations), self
-        )
-        progress.setWindowModality(QtCore.Qt.WindowModal)
-        self.setEnabled(False)
-
-        def on_progress(done, total):
-            progress.setValue(done)
-            QtWidgets.QApplication.processEvents()
-
-        try:
-            written = runner.run_export(self.doc, config, output_folder, progress_callback=on_progress)
-        except Exception as exc:
-            progress.close()
-            self.setEnabled(True)
-            message = f"Export failed: {exc}"
-            written_so_far = getattr(exc, "written", None)
-            if written_so_far:
-                message += f"\n\n{len(written_so_far)} file(s) were already written before the failure."
-            QtWidgets.QMessageBox.critical(self, "GridParams", message)
-            return
-
-        progress.close()
-        self.setEnabled(True)
-        QtWidgets.QMessageBox.information(
-            self, "GridParams", f"Exported {len(written)} file(s) to {output_folder}"
-        )
+        persistence.save_config(self._require_config_object(), config)
+        export_helpers.run_export_with_progress(self.doc, config, parent=self, disable_widget=self)

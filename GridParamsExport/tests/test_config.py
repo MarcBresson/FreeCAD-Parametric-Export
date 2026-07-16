@@ -76,6 +76,7 @@ def test_config_json_roundtrip_preserves_samplers_and_settings():
             combine=True,
             selected_object_names=["Body001", "Body003"],
             last_export_folder="/tmp/export",
+            body_name_placement="prepend",
         ),
     )
     restored = config_from_json(config_to_json(config))
