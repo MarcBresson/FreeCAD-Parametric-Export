@@ -28,4 +28,6 @@ def apply_variation(doc, varset_name, variation):
     invalid = [obj for obj in doc.Objects if "Invalid" in obj.State]
     if invalid:
         details = "; ".join(f"{obj.Name}: {obj.getStatusString()}" for obj in invalid)
-        raise RecomputeError(f"Recompute failed for variation {variation.name!r} -- {details}")
+        raise RecomputeError(
+            f"Recompute failed for variation {variation.name!r} -- {details}"
+        )

@@ -19,7 +19,8 @@ class ParameterGrid:
         if isinstance(param_grid, Mapping):
             param_grid = [param_grid]
         self.param_grid = [
-            {key: normalize_param_values(value) for key, value in grid_dict.items()} for grid_dict in param_grid
+            {key: normalize_param_values(value) for key, value in grid_dict.items()}
+            for grid_dict in param_grid
         ]
 
     def __iter__(self) -> Iterator[dict[str, Any]]:

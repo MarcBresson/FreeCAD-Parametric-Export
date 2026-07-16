@@ -51,11 +51,17 @@ def _export_using_config(obj):
     try:
         config = persistence.load_config(obj)
     except ConfigSchemaError as exc:
-        QtWidgets.QMessageBox.critical(Gui.getMainWindow(), "GridParams", f"Could not load config: {exc}")
+        QtWidgets.QMessageBox.critical(
+            Gui.getMainWindow(), "GridParams", f"Could not load config: {exc}"
+        )
         return
     if config is None:
         QtWidgets.QMessageBox.warning(
-            Gui.getMainWindow(), "GridParams", "Nothing saved yet -- open Edit and Save first."
+            Gui.getMainWindow(),
+            "GridParams",
+            "Nothing saved yet -- open Edit and Save first.",
         )
         return
-    export_helpers.run_export_with_progress(obj.Document, config, parent=Gui.getMainWindow())
+    export_helpers.run_export_with_progress(
+        obj.Document, config, parent=Gui.getMainWindow()
+    )

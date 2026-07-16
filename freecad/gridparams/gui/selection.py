@@ -17,5 +17,7 @@ def resolve_objects(doc, names):
         else:
             objects.append(obj)
     if missing:
-        raise LookupError(f"Object(s) not found in document {doc.Name!r}: {', '.join(missing)}")
+        raise LookupError(
+            f"Object(s) not found in document {doc.Name!r}: {', '.join(missing)}"
+        )
     return objects

@@ -32,7 +32,9 @@ class ConfigSchemaError(Exception):
 _MIGRATIONS: dict[int, Callable[[dict], dict]] = {}
 
 
-def apply_migrations(data: dict, migrations: dict[int, Callable[[dict], dict]], current_version: int) -> dict:
+def apply_migrations(
+    data: dict, migrations: dict[int, Callable[[dict], dict]], current_version: int
+) -> dict:
     """Walk `data` forward from its own schema_version to `current_version` via `migrations`.
 
     Pulled out of `config_from_json` as a pure function (no module-level state) so the walking
@@ -48,7 +50,9 @@ def apply_migrations(data: dict, migrations: dict[int, Callable[[dict], dict]], 
     while version < current_version:
         migrate = migrations.get(version)
         if migrate is None:
-            raise ConfigSchemaError(f"No migration registered from schema_version {version} to {current_version}.")
+            raise ConfigSchemaError(
+                f"No migration registered from schema_version {version} to {current_version}."
+            )
         data = migrate(data)
         version = data.get("schema_version", version + 1)
     return data
@@ -65,7 +69,9 @@ class ExportSettings:
     combine: bool = False
     selected_object_names: list[str] = field(default_factory=list)
     last_export_folder: str = ""
-    body_name_placement: Literal["append", "prepend"] = "append"  # only relevant when combine is False
+    body_name_placement: Literal["append", "prepend"] = (
+        "append"  # only relevant when combine is False
+    )
 
 
 @dataclass
@@ -80,12 +86,18 @@ class GridConfig:
 def expand_config(config: GridConfig) -> list[Variation]:
     variations = []
     for item in config.items:
-        template = item.name_template if item.name_template is not None else config.naming_template
+        template = (
+            item.name_template
+            if item.name_template is not None
+            else config.naming_template
+        )
         for resolved_params in ParameterGrid(item.params):
-            variations.append(Variation(
-                name=resolve_name(template, config.base_name, resolved_params),
-                params=resolved_params,
-            ))
+            variations.append(
+                Variation(
+                    name=resolve_name(template, config.base_name, resolved_params),
+                    params=resolved_params,
+                )
+            )
     return variations
 
 
@@ -97,7 +109,10 @@ def config_to_json(config: GridConfig) -> str:
         "naming_template": config.naming_template,
         "items": [
             {
-                "params": {key: param_values_to_dict(value) for key, value in item.params.items()},
+                "params": {
+                    key: param_values_to_dict(value)
+                    for key, value in item.params.items()
+                },
                 "name_template": item.name_template,
             }
             for item in config.items
@@ -117,7 +132,10 @@ def config_from_json(raw: str) -> GridConfig:
     data = apply_migrations(data, _MIGRATIONS, CONFIG_SCHEMA_VERSION)
     items = [
         GridItem(
-            params={key: param_values_from_dict(value) for key, value in item_data.get("params", {}).items()},
+            params={
+                key: param_values_from_dict(value)
+                for key, value in item_data.get("params", {}).items()
+            },
             name_template=item_data.get("name_template"),
         )
         for item_data in data.get("items", [])

@@ -37,10 +37,12 @@ def test_fixed_wrapped_scalar_degenerates_to_one_combination():
 
 
 def test_macro_style_literal_dicts_no_expansion():
-    grid = ParameterGrid([
-        {"Base_CableLength": 1000, "Base_CableThickness": 3},
-        {"Base_CableLength": 1500, "Base_CableThickness": 4},
-    ])
+    grid = ParameterGrid(
+        [
+            {"Base_CableLength": 1000, "Base_CableThickness": 3},
+            {"Base_CableLength": 1500, "Base_CableThickness": 4},
+        ]
+    )
     assert list(grid) == [
         {"Base_CableLength": 1000, "Base_CableThickness": 3},
         {"Base_CableLength": 1500, "Base_CableThickness": 4},

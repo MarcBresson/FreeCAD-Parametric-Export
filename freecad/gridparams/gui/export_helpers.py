@@ -23,18 +23,26 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
     duplicates = find_duplicate_names(variations)
     if duplicates:
         QtWidgets.QMessageBox.critical(
-            parent, "GridParams", f"Duplicate variation name(s): {', '.join(duplicates)}"
+            parent,
+            "GridParams",
+            f"Duplicate variation name(s): {', '.join(duplicates)}",
         )
         return False
     if not config.export_settings.selected_object_names:
-        QtWidgets.QMessageBox.critical(parent, "GridParams", "Select at least one object to export first.")
+        QtWidgets.QMessageBox.critical(
+            parent, "GridParams", "Select at least one object to export first."
+        )
         return False
     output_folder = Path(config.export_settings.last_export_folder)
     if not output_folder.is_dir():
-        QtWidgets.QMessageBox.critical(parent, "GridParams", f"Export folder does not exist: {output_folder}")
+        QtWidgets.QMessageBox.critical(
+            parent, "GridParams", f"Export folder does not exist: {output_folder}"
+        )
         return False
 
-    progress = QtWidgets.QProgressDialog("Exporting variations...", "Cancel", 0, len(variations), parent)
+    progress = QtWidgets.QProgressDialog(
+        "Exporting variations...", "Cancel", 0, len(variations), parent
+    )
     progress.setWindowModality(QtCore.Qt.WindowModal)
     if disable_widget is not None:
         disable_widget.setEnabled(False)
@@ -44,7 +52,9 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
         QtWidgets.QApplication.processEvents()
 
     try:
-        written = runner.run_export(doc, config, output_folder, progress_callback=on_progress)
+        written = runner.run_export(
+            doc, config, output_folder, progress_callback=on_progress
+        )
     except Exception as exc:
         progress.close()
         if disable_widget is not None:
@@ -59,5 +69,7 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
     progress.close()
     if disable_widget is not None:
         disable_widget.setEnabled(True)
-    QtWidgets.QMessageBox.information(parent, "GridParams", f"Exported {len(written)} file(s) to {output_folder}")
+    QtWidgets.QMessageBox.information(
+        parent, "GridParams", f"Exported {len(written)} file(s) to {output_folder}"
+    )
     return True

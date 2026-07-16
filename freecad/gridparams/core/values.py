@@ -58,7 +58,9 @@ class Range:
         count = 0
         while True:
             value = self.start + count * self.step
-            if (self.step > 0 and value > self.stop) or (self.step < 0 and value < self.stop):
+            if (self.step > 0 and value > self.stop) or (
+                self.step < 0 and value < self.stop
+            ):
                 break
             values.append(value)
             count += 1
