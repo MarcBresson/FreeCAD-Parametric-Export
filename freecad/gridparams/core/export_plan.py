@@ -20,13 +20,23 @@ class ExportJob:
     objects: list[str]  # object names for this one output file
 
 
-def build_export_jobs_for_variation(variation: Variation, settings: ExportSettings) -> list[ExportJob]:
+def build_export_jobs_for_variation(
+    variation: Variation, settings: ExportSettings
+) -> list[ExportJob]:
     names = settings.selected_object_names
-    groups = [names] if settings.combine or len(names) <= 1 else [[name] for name in names]
+    groups = (
+        [names] if settings.combine or len(names) <= 1 else [[name] for name in names]
+    )
     jobs = []
     for group in groups:
         stem = sanitize_filename(variation.name)
         if len(groups) > 1:
-            stem = f"{group[0]} - {stem}" if settings.body_name_placement == "prepend" else f"{stem} - {group[0]}"
-        jobs.append(ExportJob(variation_name=variation.name, output_stem=stem, objects=group))
+            stem = (
+                f"{group[0]} - {stem}"
+                if settings.body_name_placement == "prepend"
+                else f"{stem} - {group[0]}"
+            )
+        jobs.append(
+            ExportJob(variation_name=variation.name, output_stem=stem, objects=group)
+        )
     return jobs

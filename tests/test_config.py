@@ -22,8 +22,14 @@ def test_macro_style_basic_list_no_sampler():
     config = GridConfig(
         base_name="Cable winder organizer",
         items=[
-            GridItem(params={"Base_CableLength": 1000, "Base_CableThickness": 3}, name_template="XS"),
-            GridItem(params={"Base_CableLength": 1500, "Base_CableThickness": 4}, name_template="S"),
+            GridItem(
+                params={"Base_CableLength": 1000, "Base_CableThickness": 3},
+                name_template="XS",
+            ),
+            GridItem(
+                params={"Base_CableLength": 1500, "Base_CableThickness": 4},
+                name_template="S",
+            ),
         ],
     )
     variations = expand_config(config)
@@ -47,7 +53,10 @@ def test_list_of_dicts_grid_expands_independently():
         naming_template="{base_name} - {Length}",
         items=[
             GridItem(params={"Length": Fixed(1)}),
-            GridItem(params={"Width": ValueList([2, 3])}, name_template="{base_name} - W{Width}"),
+            GridItem(
+                params={"Width": ValueList([2, 3])},
+                name_template="{base_name} - W{Width}",
+            ),
         ],
     )
     variations = expand_config(config)
@@ -69,7 +78,10 @@ def test_config_json_roundtrip_preserves_samplers_and_settings():
         varset_object_name="VarSet",
         naming_template="{base_name} - {Length}",
         items=[
-            GridItem(params={"Length": LinSpace(0, 10, 3), "Label": "fixed-str"}, name_template=None),
+            GridItem(
+                params={"Length": LinSpace(0, 10, 3), "Label": "fixed-str"},
+                name_template=None,
+            ),
             GridItem(params={"Length": 5}, name_template="Explicit"),
         ],
         export_settings=ExportSettings(
@@ -106,7 +118,9 @@ def test_apply_migrations_defaults_missing_version_to_one():
 
 def test_apply_migrations_walks_a_multi_step_chain():
     def v1_to_v2(data):
-        remaining = {k: v for k, v in data.items() if k not in ("old_name", "schema_version")}
+        remaining = {
+            k: v for k, v in data.items() if k not in ("old_name", "schema_version")
+        }
         return {**remaining, "schema_version": 2, "renamed": data["old_name"]}
 
     def v2_to_v3(data):

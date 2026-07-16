@@ -1,4 +1,4 @@
-from fakes import FakeDocument
+from tests.fakes import FakeDocument
 
 from freecad.gridparams.core.config import GridConfig
 from freecad.gridparams.gui import persistence

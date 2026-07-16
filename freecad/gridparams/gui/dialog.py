@@ -1,16 +1,24 @@
 """The GridParams dialog: build a parameter grid, preview resulting variations, and run export.
 
-All expansion/naming/export-planning logic is delegated to freecad.gridparams.core -- this
+All expansion/naming/export-planning logic is delegated to gridparams.core -- this
 module only translates between Qt widgets and that core's dataclasses.
 """
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from freecad.gridparams.core.config import ConfigSchemaError, ExportSettings, GridConfig, GridItem, expand_config
+from . import persistence
+from freecad.gridparams.core.config import (
+    ConfigSchemaError,
+    ExportSettings,
+    GridConfig,
+    GridItem,
+    expand_config,
+)
 from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
+from . import export_helpers
 
-from . import export_helpers, persistence, selection
+from . import selection
 
 _VALUE_PLACEHOLDERS = {
     "Fixed": "e.g. 12",
@@ -79,7 +87,9 @@ class VariationsDialog(QtWidgets.QDialog):
         self.resize(600, 400)
 
         layout = QtWidgets.QVBoxLayout(self)
-        param_keys = sorted({key for variation in variations for key in variation.params})
+        param_keys = sorted(
+            {key for variation in variations for key in variation.params}
+        )
         table = QtWidgets.QTableWidget(len(variations), 1 + len(param_keys))
         table.setHorizontalHeaderLabels(["Name"] + param_keys)
         table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
@@ -89,7 +99,11 @@ class VariationsDialog(QtWidgets.QDialog):
                 name_item.setBackground(QtGui.QColor("#c0392b"))
             table.setItem(row, 0, name_item)
             for col, key in enumerate(param_keys, start=1):
-                table.setItem(row, col, QtWidgets.QTableWidgetItem(str(variation.params.get(key, ""))))
+                table.setItem(
+                    row,
+                    col,
+                    QtWidgets.QTableWidgetItem(str(variation.params.get(key, ""))),
+                )
         layout.addWidget(table)
 
         close_btn = QtWidgets.QPushButton("Close")
@@ -120,7 +134,9 @@ class ObjectPickerDialog(QtWidgets.QDialog):
         manual_row = QtWidgets.QHBoxLayout()
         manual_row.addWidget(QtWidgets.QLabel("Or reference by name/label:"))
         self.manual_edit = QtWidgets.QLineEdit()
-        self.manual_edit.setPlaceholderText("e.g. Compound001 (bypasses the filter above)")
+        self.manual_edit.setPlaceholderText(
+            "e.g. Compound001 (bypasses the filter above)"
+        )
         manual_row.addWidget(self.manual_edit, stretch=1)
         layout.addLayout(manual_row)
 
@@ -134,15 +150,21 @@ class ObjectPickerDialog(QtWidgets.QDialog):
     def _on_accept(self):
         text = self.manual_edit.text().strip()
         if text:
-            obj = self.doc.getObject(text) or next(iter(self.doc.getObjectsByLabel(text)), None)
+            obj = self.doc.getObject(text) or next(
+                iter(self.doc.getObjectsByLabel(text)), None
+            )
             if obj is None:
-                QtWidgets.QMessageBox.warning(self, "GridParams", f"No object found named or labeled {text!r}.")
+                QtWidgets.QMessageBox.warning(
+                    self, "GridParams", f"No object found named or labeled {text!r}."
+                )
                 return
             self._resolved_manual_name = obj.Name
         self.accept()
 
     def selected_names(self):
-        names = [item.data(QtCore.Qt.UserRole) for item in self.list_widget.selectedItems()]
+        names = [
+            item.data(QtCore.Qt.UserRole) for item in self.list_widget.selectedItems()
+        ]
         if self._resolved_manual_name and self._resolved_manual_name not in names:
             names.append(self._resolved_manual_name)
         return names
@@ -158,7 +180,9 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         config_obj = self._require_config_object()
         try:
-            config = persistence.load_config(config_obj) or GridConfig(base_name=config_obj.Label)
+            config = persistence.load_config(config_obj) or GridConfig(
+                base_name=config_obj.Label
+            )
         except ConfigSchemaError as exc:
             QtWidgets.QMessageBox.warning(
                 self,
@@ -177,7 +201,9 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _require_config_object(self):
         obj = persistence.get_config_object(self.doc, self.config_object_name)
         if obj is None:
-            raise RuntimeError(f"GridParams config object {self.config_object_name!r} no longer exists.")
+            raise RuntimeError(
+                f"GridParams config object {self.config_object_name!r} no longer exists."
+            )
         return obj
 
     # -- UI construction -------------------------------------------------
@@ -213,7 +239,9 @@ class GridParamsDialog(QtWidgets.QDialog):
         items_split = QtWidgets.QHBoxLayout()
 
         items_panel = QtWidgets.QVBoxLayout()
-        items_panel.addWidget(QtWidgets.QLabel("Grid items (one per configuration/version)"))
+        items_panel.addWidget(
+            QtWidgets.QLabel("Grid items (one per configuration/version)")
+        )
         self.items_list = QtWidgets.QListWidget()
         self.items_list.currentItemChanged.connect(self._on_item_selection_changed)
         items_panel.addWidget(self.items_list)
@@ -230,11 +258,17 @@ class GridParamsDialog(QtWidgets.QDialog):
         items_split.addLayout(items_panel, stretch=1)
 
         detail_panel = QtWidgets.QVBoxLayout()
-        detail_panel.addWidget(QtWidgets.QLabel("Item naming template (blank = use default template above)"))
+        detail_panel.addWidget(
+            QtWidgets.QLabel(
+                "Item naming template (blank = use default template above)"
+            )
+        )
         self.item_name_template_edit = QtWidgets.QLineEdit()
         self.item_name_template_edit.setPlaceholderText("{base_name} - {ParamName}")
         self.item_name_template_edit.textChanged.connect(self._refresh_preview)
-        self.item_name_template_edit.textChanged.connect(self._on_item_name_template_changed)
+        self.item_name_template_edit.textChanged.connect(
+            self._on_item_name_template_changed
+        )
         detail_panel.addWidget(self.item_name_template_edit)
 
         self.params_table = QtWidgets.QTableWidget(0, 3)
@@ -302,8 +336,12 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         body_name_row = QtWidgets.QHBoxLayout()
         body_name_row.addSpacing(20)
-        self.prepend_body_radio = QtWidgets.QRadioButton("Prepend body name to exported variation names")
-        self.append_body_radio = QtWidgets.QRadioButton("Append body name to exported variation names")
+        self.prepend_body_radio = QtWidgets.QRadioButton(
+            "Prepend body name to exported variation names"
+        )
+        self.append_body_radio = QtWidgets.QRadioButton(
+            "Append body name to exported variation names"
+        )
         self.append_body_radio.setChecked(True)
         self.body_name_group = QtWidgets.QButtonGroup(self)
         self.body_name_group.addButton(self.prepend_body_radio)
@@ -378,7 +416,9 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _on_item_name_template_changed(self, text):
         row = self.items_list.currentRow()
         if 0 <= row < self.items_list.count():
-            self.items_list.item(row).setText(self._format_item_label(row, text.strip() or None))
+            self.items_list.item(row).setText(
+                self._format_item_label(row, text.strip() or None)
+            )
 
     # -- Item list management ---------------------------------------------
 
@@ -394,7 +434,9 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _renumber_items(self):
         for index in range(self.items_list.count()):
-            self.items_list.item(index).setText(self._item_label(index, self._items[index]))
+            self.items_list.item(index).setText(
+                self._item_label(index, self._items[index])
+            )
 
     def _add_item(self):
         new_item = GridItem(params={})
@@ -409,7 +451,9 @@ class GridParamsDialog(QtWidgets.QDialog):
             return
         self._items[row] = self._capture_item_from_widgets()
         original = self._items[row]
-        clone = GridItem(params=dict(original.params), name_template=original.name_template)
+        clone = GridItem(
+            params=dict(original.params), name_template=original.name_template
+        )
         self._items.insert(row + 1, clone)
         self.items_list.insertItem(row + 1, self._item_label(row + 1, clone))
         self._renumber_items()
@@ -421,7 +465,9 @@ class GridParamsDialog(QtWidgets.QDialog):
         if row < 0:
             return
         if len(self._items) <= 1:
-            QtWidgets.QMessageBox.warning(self, "GridParams", "At least one item is required.")
+            QtWidgets.QMessageBox.warning(
+                self, "GridParams", "At least one item is required."
+            )
             return
         del self._items[row]
         self.items_list.takeItem(row)
@@ -448,7 +494,9 @@ class GridParamsDialog(QtWidgets.QDialog):
             kind_widget = self.params_table.cellWidget(row, 1)
             value_widget = self.params_table.cellWidget(row, 2)
             try:
-                params[param_name] = _build_param_value(kind_widget.currentText(), value_widget.text())
+                params[param_name] = _build_param_value(
+                    kind_widget.currentText(), value_widget.text()
+                )
             except ValueError:
                 continue
         return GridItem(params=params, name_template=name_template)
@@ -499,7 +547,9 @@ class GridParamsDialog(QtWidgets.QDialog):
         self._refresh_preview()
 
     def _remove_selected_param_row(self):
-        rows = sorted({index.row() for index in self.params_table.selectedIndexes()}, reverse=True)
+        rows = sorted(
+            {index.row() for index in self.params_table.selectedIndexes()}, reverse=True
+        )
         for row in rows:
             self.params_table.removeRow(row)
         self._refresh_preview()
@@ -519,7 +569,9 @@ class GridParamsDialog(QtWidgets.QDialog):
                 combine=self.combine_radio.isChecked(),
                 selected_object_names=list(self._selected_object_names),
                 last_export_folder=self.output_folder_edit.text(),
-                body_name_placement="prepend" if self.prepend_body_radio.isChecked() else "append",
+                body_name_placement="prepend"
+                if self.prepend_body_radio.isChecked()
+                else "append",
             ),
         )
 
@@ -551,7 +603,9 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _use_current_selection(self):
         names = selection.get_selected_object_names()
         if not names:
-            QtWidgets.QMessageBox.warning(self, "GridParams", "Nothing selected in the 3D view / tree.")
+            QtWidgets.QMessageBox.warning(
+                self, "GridParams", "Nothing selected in the 3D view / tree."
+            )
             return
         self._selected_object_names = names
         self._refresh_objects_table()
@@ -566,7 +620,8 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _add_objects(self):
         existing = set(self._selected_object_names)
         candidates = [
-            obj for obj in self.doc.Objects
+            obj
+            for obj in self.doc.Objects
             if obj.Name not in existing
             and not persistence.is_config_object(obj)
             and any(obj.isDerivedFrom(t) for t in _EXPORTABLE_BASE_TYPES)
@@ -579,7 +634,10 @@ class GridParamsDialog(QtWidgets.QDialog):
             self._refresh_objects_table()
 
     def _remove_selected_objects(self):
-        rows = sorted({index.row() for index in self.objects_table.selectedIndexes()}, reverse=True)
+        rows = sorted(
+            {index.row() for index in self.objects_table.selectedIndexes()},
+            reverse=True,
+        )
         for row in rows:
             del self._selected_object_names[row]
         self._refresh_objects_table()
@@ -601,7 +659,9 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _on_save(self):
         config = self._build_config_from_widgets()
         persistence.save_config(self._require_config_object(), config)
-        QtWidgets.QMessageBox.information(self, "GridParams", "Configuration saved to document.")
+        QtWidgets.QMessageBox.information(
+            self, "GridParams", "Configuration saved to document."
+        )
 
     def _on_run_export(self):
         config = self._build_config_from_widgets()
@@ -616,4 +676,6 @@ class GridParamsDialog(QtWidgets.QDialog):
             return
 
         persistence.save_config(self._require_config_object(), config)
-        export_helpers.run_export_with_progress(self.doc, config, parent=self, disable_widget=self)
+        export_helpers.run_export_with_progress(
+            self.doc, config, parent=self, disable_widget=self
+        )

@@ -58,7 +58,7 @@ Restart FreeCAD; "Grid Params Export" appears in the workbench selector.
 
 ## Running the core tests
 
-The `freecad.gridparams.core` package has no dependency on `FreeCAD`/`FreeCADGui` and can be
+The `gridparams.core` package has no dependency on `FreeCAD`/`FreeCADGui` and can be
 tested standalone:
 
 ```
