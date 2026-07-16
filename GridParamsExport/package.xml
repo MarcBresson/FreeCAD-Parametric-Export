@@ -6,7 +6,7 @@
   <date>2026-07-08</date>
   <maintainer email="marc.bresson@datategy.net">Marc Bresson</maintainer>
   <license file="LICENSE">MIT</license>
-  <url type="repository" branch="main">https://github.com/&lt;your-username&gt;/FreeCAD-GridParams</url>
+  <url type="repository" branch="main">https://github.com/MarcBresson/FreeCAD-GridParams</url>
   <icon>Resources/icons/gridparams.svg</icon>
   <content>
     <workbench>
@@ -17,7 +17,7 @@
     </workbench>
   </content>
   <freecadmin>1.0.0</freecadmin>
-  <pythonmin>3.8</pythonmin>
+  <pythonmin>3.11</pythonmin>
   <tag>export</tag>
   <tag>mesh</tag>
   <tag>parametric</tag>
