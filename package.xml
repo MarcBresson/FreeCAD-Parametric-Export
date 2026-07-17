@@ -5,8 +5,11 @@
   <version>0.1.0</version>
   <date>2026-07-08</date>
   <maintainer email="m.bresson@mailo.eu">Marc Bresson</maintainer>
+  <author email="m.bresson@mailo.eu">Marc Bresson</author>
   <license file="LICENSE">MIT</license>
   <url type="repository" branch="main">https://github.com/MarcBresson/FreeCAD-Parametric-Export</url>
+  <url type="bugtracker">https://github.com/MarcBresson/FreeCAD-Parametric-Export/issues</url>
+  <url type="readme">https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/README.md</url>
   <icon>Resources/icons/gridparams.svg</icon>
   <content>
     <workbench>
