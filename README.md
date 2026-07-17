@@ -5,6 +5,8 @@ driven by an `App::VarSet`. Everything is managed with an interactive dialog: de
 parameter grid, preview the resulting variations and their names, then export a selected set
 of objects per variation to files.
 
+![Grid Params Export dialog in FreeCAD](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/main-dialog.png)
+
 ## Parameter grid model
 
 A grid is a list of **items**. Each item is one "sklearn `ParameterGrid`-style" dict of
@@ -27,6 +29,8 @@ If a template lacks a placeholder needed to distinguish multiple resulting combi
 preview highlights the resulting duplicate names and "Run Export" refuses to run until it's
 fixed.
 
+![Grid definition and variations preview](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/variation-dialog.png)
+
 ## Export
 
 Pick objects via "Use Current Selection" (reads the current 3D view / tree selection), and
@@ -46,6 +50,11 @@ one currently installed shows a clear warning and falls back to a blank configur
 than silently misreading it or crashing (the old saved config is left untouched in the document
 until you explicitly overwrite it with Save).
 
+The hidden `GridParamsConfig` object is still visible in the tree, where its context menu lets
+you reopen the dialog or trigger an export directly:
+
+![GridParamsConfig context menu in the tree view](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/left-column-dialog.png)
+
 ## Installing (development)
 
 Symlink or copy this folder into your FreeCAD user `Mod/` directory, e.g. on macOS:
@@ -55,6 +64,8 @@ ln -s "$(pwd)" "$HOME/Library/Application Support/FreeCAD/Mod/GridParamsExport"
 ```
 
 Restart FreeCAD; "Grid Params Export" appears in the workbench selector.
+
+![Grid Params Export workbench and toolbar](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/top-bar-workbench.png)
 
 ## Running the core tests
 

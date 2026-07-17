@@ -3,3 +3,4 @@ tests/                  export-ignore
 .github/                export-ignore
 pyproject.toml          export-ignore
 .gitignore              export-ignore
+*.png filter=lfs diff=lfs merge=lfs -text
