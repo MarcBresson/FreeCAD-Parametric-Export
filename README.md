@@ -5,7 +5,7 @@ driven by an `App::VarSet`. Everything is managed with an interactive dialog: de
 parameter grid, preview the resulting variations and their names, then export a selected set
 of objects per variation to files.
 
-![Grid Params Export dialog in FreeCAD](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/main-dialog.png)
+![Grid Params Export dialog in FreeCAD](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/main-dialog.png)
 
 ## Parameter grid model
 
@@ -29,7 +29,7 @@ If a template lacks a placeholder needed to distinguish multiple resulting combi
 preview highlights the resulting duplicate names and "Run Export" refuses to run until it's
 fixed.
 
-![Grid definition and variations preview](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/variation-dialog.png)
+![Grid definition and variations preview](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/variation-dialog.png)
 
 ## Export
 
@@ -53,7 +53,7 @@ until you explicitly overwrite it with Save).
 The hidden `GridParamsConfig` object is still visible in the tree, where its context menu lets
 you reopen the dialog or trigger an export directly:
 
-![GridParamsConfig context menu in the tree view](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/left-column-dialog.png)
+![GridParamsConfig context menu in the tree view](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/left-column-dialog.png)
 
 ## Installing (development)
 
@@ -65,7 +65,7 @@ ln -s "$(pwd)" "$HOME/Library/Application Support/FreeCAD/Mod/GridParamsExport"
 
 Restart FreeCAD; "Grid Params Export" appears in the workbench selector.
 
-![Grid Params Export workbench and toolbar](https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/Resources/Media/top-bar-workbench.png)
+![Grid Params Export workbench and toolbar](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/top-bar-workbench.png)
 
 ## Running the core tests
 
