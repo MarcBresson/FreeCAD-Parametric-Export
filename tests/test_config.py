@@ -89,6 +89,12 @@ def test_config_json_roundtrip_preserves_samplers_and_settings():
             selected_object_names=["Body001", "Body003"],
             last_export_folder="/tmp/export",
             body_name_placement="prepend",
+            csv_include_value=False,
+            csv_include_unit=False,
+            csv_include_freecad_unit=False,
+            csv_include_group=False,
+            csv_include_comment=True,
+            csv_include_private=True,
         ),
     )
     restored = config_from_json(config_to_json(config))
@@ -152,3 +158,55 @@ def test_config_from_json_raises_config_schema_error_for_unsupported_future_vers
     data["schema_version"] = CONFIG_SCHEMA_VERSION + 1
     with pytest.raises(ConfigSchemaError):
         config_from_json(json.dumps(data))
+
+
+def test_config_from_json_migrates_v1_documents_to_default_csv_export_settings():
+    raw = json.dumps(
+        {
+            "schema_version": 1,
+            "base_name": "Base",
+            "varset_object_name": "VarSet",
+            "naming_template": "{base_name}",
+            "items": [],
+            "export_settings": {
+                "combine": False,
+                "selected_object_names": [],
+                "last_export_folder": "",
+                "body_name_placement": "append",
+            },
+        }
+    )
+    config = config_from_json(raw)
+    assert config.export_settings.csv_include_value is True
+    assert config.export_settings.csv_include_unit is True
+    assert config.export_settings.csv_include_freecad_unit is True
+    assert config.export_settings.csv_include_group is True
+    assert config.export_settings.csv_include_comment is True
+    assert config.export_settings.csv_include_private is False
+
+
+def test_config_from_json_defaults_missing_optional_csv_fields_on_current_schema():
+    """A schema_version-2 document saved before the Group column existed has no
+    csv_include_group key; config_from_json should still default it rather than error."""
+    raw = json.dumps(
+        {
+            "schema_version": 2,
+            "base_name": "Base",
+            "varset_object_name": "VarSet",
+            "naming_template": "{base_name}",
+            "items": [],
+            "export_settings": {
+                "combine": False,
+                "selected_object_names": [],
+                "last_export_folder": "",
+                "body_name_placement": "append",
+                "csv_include_value": True,
+                "csv_include_unit": True,
+                "csv_include_freecad_unit": True,
+                "csv_include_comment": True,
+                "csv_include_private": False,
+            },
+        }
+    )
+    config = config_from_json(raw)
+    assert config.export_settings.csv_include_group is True

@@ -16,20 +16,36 @@ from .naming import resolve_name
 from .values import param_values_from_dict, param_values_to_dict
 from .variation import Variation
 
-CONFIG_SCHEMA_VERSION = 1
+CONFIG_SCHEMA_VERSION = 2
 
 
 class ConfigSchemaError(Exception):
     pass
 
 
-# Keyed by the version a migration migrates FROM; each function takes the raw dict at that
-# version and returns the raw dict at version + 1 (with "schema_version" updated to match).
-# To make a breaking change to the on-disk shape: bump CONFIG_SCHEMA_VERSION, write a
-# `_migrate_v<N>_to_v<N+1>(data: dict) -> dict` that transforms the old keys/shape into the new
-# one, and register it here under `<N>`. Old documents then migrate forward automatically the
-# next time they're loaded; nothing else in this module needs to change.
-_MIGRATIONS: dict[int, Callable[[dict], dict]] = {}
+def _migrate_v1_to_v2(data: dict) -> dict:
+    """v2 adds VarSet-CSV-export fields to export_settings; default them for older documents."""
+    export_settings = dict(data.get("export_settings", {}))
+    export_settings.setdefault("csv_include_value", True)
+    export_settings.setdefault("csv_include_unit", True)
+    export_settings.setdefault("csv_include_comment", True)
+    export_settings.setdefault("csv_include_private", False)
+    export_settings.setdefault("csv_include_freecad_unit", True)
+    export_settings.setdefault("csv_include_group", True)
+    return {**data, "schema_version": 2, "export_settings": export_settings}
+
+
+_MIGRATIONS: dict[int, Callable[[dict], dict]] = {
+    1: _migrate_v1_to_v2,
+}
+"""
+Keyed by the version a migration migrates FROM; each function takes the raw dict at that
+version and returns the raw dict at version + 1 (with "schema_version" updated to match).
+To make a breaking change to the on-disk shape: bump CONFIG_SCHEMA_VERSION, write a
+`_migrate_v<N>_to_v<N+1>(data: dict) -> dict` that transforms the old keys/shape into the new
+one, and register it here under `<N>`. Old documents then migrate forward automatically the
+next time they're loaded; nothing else in this module needs to change.
+"""
 
 
 def apply_migrations(
@@ -72,6 +88,12 @@ class ExportSettings:
     body_name_placement: Literal["append", "prepend"] = (
         "append"  # only relevant when combine is False
     )
+    csv_include_value: bool = True
+    csv_include_unit: bool = True
+    csv_include_freecad_unit: bool = True
+    csv_include_group: bool = True
+    csv_include_comment: bool = True
+    csv_include_private: bool = False
 
 
 @dataclass
@@ -122,6 +144,12 @@ def config_to_json(config: GridConfig) -> str:
             "selected_object_names": list(config.export_settings.selected_object_names),
             "last_export_folder": config.export_settings.last_export_folder,
             "body_name_placement": config.export_settings.body_name_placement,
+            "csv_include_value": config.export_settings.csv_include_value,
+            "csv_include_unit": config.export_settings.csv_include_unit,
+            "csv_include_freecad_unit": config.export_settings.csv_include_freecad_unit,
+            "csv_include_group": config.export_settings.csv_include_group,
+            "csv_include_comment": config.export_settings.csv_include_comment,
+            "csv_include_private": config.export_settings.csv_include_private,
         },
     }
     return json.dumps(data, indent=2)
@@ -146,6 +174,12 @@ def config_from_json(raw: str) -> GridConfig:
         selected_object_names=list(export_data.get("selected_object_names", [])),
         last_export_folder=export_data.get("last_export_folder", ""),
         body_name_placement=export_data.get("body_name_placement", "append"),
+        csv_include_value=export_data.get("csv_include_value", True),
+        csv_include_unit=export_data.get("csv_include_unit", True),
+        csv_include_freecad_unit=export_data.get("csv_include_freecad_unit", True),
+        csv_include_group=export_data.get("csv_include_group", True),
+        csv_include_comment=export_data.get("csv_include_comment", True),
+        csv_include_private=export_data.get("csv_include_private", False),
     )
     return GridConfig(
         base_name=data.get("base_name", ""),

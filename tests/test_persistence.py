@@ -1,6 +1,8 @@
+import json
+
 from tests.fakes import FakeDocument
 
-from freecad.gridparams.core.config import GridConfig
+from freecad.gridparams.core.config import CONFIG_SCHEMA_VERSION, GridConfig
 from freecad.gridparams.gui import persistence
 
 
@@ -50,6 +52,48 @@ def test_load_config_returns_none_when_never_saved():
     doc = FakeDocument()
     obj = persistence.create_config_object(doc)
     assert persistence.load_config(obj) is None
+
+
+def test_load_config_persists_migrated_data_back_onto_the_object():
+    doc = FakeDocument()
+    obj = persistence.create_config_object(doc)
+    setattr(
+        obj,
+        persistence.CONFIG_PROP,
+        json.dumps(
+            {
+                "schema_version": 1,
+                "base_name": "Base",
+                "varset_object_name": "VarSet",
+                "naming_template": "{base_name}",
+                "items": [],
+                "export_settings": {
+                    "combine": False,
+                    "selected_object_names": [],
+                    "last_export_folder": "",
+                    "body_name_placement": "append",
+                },
+            }
+        ),
+    )
+
+    persistence.load_config(obj)
+
+    stored = json.loads(getattr(obj, persistence.CONFIG_PROP))
+    assert stored["schema_version"] == CONFIG_SCHEMA_VERSION
+    assert stored["export_settings"]["csv_include_value"] is True
+
+
+def test_load_config_does_not_rewrite_the_property_when_already_current():
+    doc = FakeDocument()
+    obj = persistence.create_config_object(doc)
+    config = GridConfig(base_name="Cable winder")
+    persistence.save_config(obj, config)
+    raw_before = getattr(obj, persistence.CONFIG_PROP)
+
+    persistence.load_config(obj)
+
+    assert getattr(obj, persistence.CONFIG_PROP) == raw_before
 
 
 def test_get_config_object_returns_none_for_non_config_object():

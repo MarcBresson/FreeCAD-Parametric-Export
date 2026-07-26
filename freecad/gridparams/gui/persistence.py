@@ -7,7 +7,13 @@ identity is just its Label -- renamable inline in the tree like any other FreeCA
 with no separate name property to keep in sync.
 """
 
-from freecad.gridparams.core.config import config_from_json, config_to_json
+import json
+
+from freecad.gridparams.core.config import (
+    CONFIG_SCHEMA_VERSION,
+    config_from_json,
+    config_to_json,
+)
 
 CONFIG_OBJECT_BASE_NAME = "GridParamsConfig"
 CONFIG_PROP = "ConfigJSON"
@@ -85,4 +91,10 @@ def save_config(obj, config):
 def load_config(obj):
     if obj is None or not getattr(obj, CONFIG_PROP, ""):
         return None
-    return config_from_json(getattr(obj, CONFIG_PROP))
+    raw = getattr(obj, CONFIG_PROP)
+    config = config_from_json(raw)
+    if json.loads(raw).get("schema_version", 1) < CONFIG_SCHEMA_VERSION:
+        # Persist the migrated shape immediately so the document is upgraded in place
+        # rather than being re-migrated (silently, in memory) on every future load.
+        save_config(obj, config)
+    return config

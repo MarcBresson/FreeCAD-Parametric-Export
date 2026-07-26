@@ -31,10 +31,18 @@ fixed.
 
 ![Grid definition and variations preview](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/variation-dialog.png)
 
-## Export
+## Export Variations
 
 Pick objects via "Use Current Selection" (reads the current 3D view / tree selection), and
 choose "Combine into one file" or "One file per object".
+
+## Exporting VarSet parameters to CSV
+
+The "Export VarSet to CSV..." button next to the VarSet picker dumps every property of the
+selected `App::VarSet` (name, its property group, value, etc.) to a CSV file, handy for
+generating parameter documentation. Checkboxes let you pick which columns to include and
+whether to include "private" variables (those whose name *or* property group starts with
+`_`) along with a few other parameters.
 
 ## Persistence
 

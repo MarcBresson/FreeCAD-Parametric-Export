@@ -16,7 +16,9 @@ from freecad.gridparams.core.config import (
 )
 from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
+from freecad.gridparams.core.varset_export import VarSetCsvOptions
 from . import export_helpers
+from . import varset_export
 
 from . import selection
 
@@ -176,6 +178,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.doc = doc
         self.config_object_name = config_object_name
         self._selected_object_names = []
+        self._csv_options = VarSetCsvOptions()
         self.resize(900, 650)
 
         config_obj = self._require_config_object()
@@ -231,7 +234,12 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.naming_template_edit.textChanged.connect(self._refresh_preview)
         header_form.addRow("Base name", self.base_name_edit)
         header_form.addRow("Default naming template", self.naming_template_edit)
-        header_form.addRow("VarSet", self.varset_combo)
+        varset_row = QtWidgets.QHBoxLayout()
+        varset_row.addWidget(self.varset_combo, stretch=1)
+        export_csv_btn = QtWidgets.QPushButton("Export VarSet to CSV...")
+        export_csv_btn.clicked.connect(self._on_export_varset_csv)
+        varset_row.addWidget(export_csv_btn)
+        header_form.addRow("VarSet", varset_row)
         layout.addLayout(header_form)
 
         layout.addWidget(self._make_separator())
@@ -405,6 +413,15 @@ class GridParamsDialog(QtWidgets.QDialog):
             self.append_body_radio.setChecked(True)
         self._update_body_name_radios_enabled()
 
+        self._csv_options = VarSetCsvOptions(
+            include_value=config.export_settings.csv_include_value,
+            include_unit=config.export_settings.csv_include_unit,
+            include_freecad_unit=config.export_settings.csv_include_freecad_unit,
+            include_group=config.export_settings.csv_include_group,
+            include_comment=config.export_settings.csv_include_comment,
+            include_private=config.export_settings.csv_include_private,
+        )
+
         self._refresh_preview()
 
     def _item_label(self, index, item):
@@ -572,6 +589,12 @@ class GridParamsDialog(QtWidgets.QDialog):
                 body_name_placement="prepend"
                 if self.prepend_body_radio.isChecked()
                 else "append",
+                csv_include_value=self._csv_options.include_value,
+                csv_include_unit=self._csv_options.include_unit,
+                csv_include_freecad_unit=self._csv_options.include_freecad_unit,
+                csv_include_group=self._csv_options.include_group,
+                csv_include_comment=self._csv_options.include_comment,
+                csv_include_private=self._csv_options.include_private,
             ),
         )
 
@@ -653,6 +676,24 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         if folder:
             self.output_folder_edit.setText(folder)
+
+    def _on_export_varset_csv(self):
+        varset = self.doc.getObject(self.varset_combo.currentText())
+        if varset is None:
+            QtWidgets.QMessageBox.warning(
+                self, "GridParams", "Select a VarSet to export first."
+            )
+            return
+        properties = varset_export.collect_properties(varset)
+        csv_dialog = varset_export.VarSetCsvExportDialog(
+            varset,
+            properties,
+            self._csv_options,
+            default_folder=self.output_folder_edit.text(),
+            parent=self,
+        )
+        if csv_dialog.exec() == QtWidgets.QDialog.Accepted:
+            self._csv_options = csv_dialog.options
 
     # -- Save / Run --------------------------------------------------------
 
