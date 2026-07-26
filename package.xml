@@ -2,7 +2,7 @@
 <package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>Grid Params Export</name>
   <description>Generate and batch-export multiple variations of a parametric model to 3MF. Define a parameter grid over an App::VarSet (ParameterGrid-style, similar to scikit-learn), preview the resulting variations and their names, then export a chosen set of objects per variation.</description>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <date>2026-07-08</date>
   <maintainer email="m.bresson@mailo.eu">Marc Bresson</maintainer>
   <author email="m.bresson@mailo.eu">Marc Bresson</author>
