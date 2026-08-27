@@ -8,7 +8,7 @@ from freecad.gridparams.core.variation import find_duplicate_names
 
 from .mesh_export import export_objects
 from .selection import resolve_objects
-from .varset_apply import apply_variation
+from .varset_apply import apply_variation, capture_params, restore_params
 
 
 class DuplicateVariationNamesError(Exception):
@@ -28,28 +28,40 @@ class ExportAbortedError(Exception):
 def run_export(
     doc, config: GridConfig, output_folder: Path, progress_callback=None
 ) -> list[Path]:
-    variations = expand_config(config)
+    variations = expand_config(config, document_label=doc.Label)
     duplicates = find_duplicate_names(variations)
     if duplicates:
         raise DuplicateVariationNamesError(duplicates)
 
+    object_labels = {
+        name: obj.Label
+        for name in config.export_settings.selected_object_names
+        if (obj := doc.getObject(name)) is not None
+    }
+
+    param_names = {name for variation in variations for name in variation.params}
+    original_values = capture_params(doc, config.varset_object_name, param_names)
+
     written = []
     total = len(variations)
-    for index, variation in enumerate(variations, start=1):
-        try:
-            apply_variation(doc, config.varset_object_name, variation)
-            for job in build_export_jobs_for_variation(
-                variation, config.export_settings
-            ):
-                objects = resolve_objects(doc, job.objects)
-                path = output_folder / job.output_stem
-                export_objects(objects, path)
-                written.append(path.with_suffix(".3mf"))
-        except Exception as exc:
-            raise ExportAbortedError(
-                f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",
-                written=written,
-            ) from exc
-        if progress_callback is not None:
-            progress_callback(index, total)
+    try:
+        for index, variation in enumerate(variations, start=1):
+            try:
+                apply_variation(doc, config.varset_object_name, variation)
+                for job in build_export_jobs_for_variation(
+                    variation, config.export_settings, object_labels
+                ):
+                    objects = resolve_objects(doc, job.objects)
+                    path = output_folder / job.output_stem
+                    export_objects(objects, path)
+                    written.append(path.with_name(path.name + ".3mf"))
+            except Exception as exc:
+                raise ExportAbortedError(
+                    f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",
+                    written=written,
+                ) from exc
+            if progress_callback is not None:
+                progress_callback(index, total)
+    finally:
+        restore_params(doc, config.varset_object_name, original_values)
     return written

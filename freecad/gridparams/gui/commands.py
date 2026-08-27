@@ -21,14 +21,13 @@ class CmdNewGridParamsConfig:
 
     def Activated(self):
         from . import persistence
-        from .dialog import GridParamsDialog
+        from .dialog import open_or_focus
 
         doc = App.ActiveDocument
         obj = persistence.create_config_object(doc)
         doc.recompute()
 
-        dialog = GridParamsDialog(doc, obj.Name, parent=Gui.getMainWindow())
-        dialog.show()
+        open_or_focus(doc, obj.Name, parent=Gui.getMainWindow())
 
 
 def register():

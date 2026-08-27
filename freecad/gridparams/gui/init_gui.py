@@ -13,11 +13,14 @@ class GridParamsWorkbench(Gui.Workbench):
     Icon = os.path.join(ICON_DIR, "gridparams.svg")
 
     def Initialize(self):
-        from . import commands
+        from . import commands, preferences
 
         commands.register()
         self.appendToolbar("Grid Params Export", [commands.COMMAND_NAME])
         self.appendMenu("Grid Params Export", [commands.COMMAND_NAME])
+        Gui.addPreferencePage(
+            preferences.GridParamsPreferencesPage, "Grid Params Export"
+        )
 
     def GetClassName(self):
         return "Gui::PythonWorkbench"

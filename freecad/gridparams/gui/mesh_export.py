@@ -2,7 +2,7 @@
 
 
 def export_objects(objects, export_path):
-    export_path = export_path.with_suffix(".3mf")
+    export_path = export_path.with_name(export_path.name + ".3mf")
     import Mesh
 
     if hasattr(Mesh, "exportOptions"):

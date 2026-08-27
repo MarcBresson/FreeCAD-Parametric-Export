@@ -6,7 +6,7 @@ module only translates between Qt widgets and that core's dataclasses.
 
 from PySide import QtCore, QtGui, QtWidgets
 
-from . import persistence
+import FreeCAD as App
 from freecad.gridparams.core.config import (
     ConfigSchemaError,
     ExportSettings,
@@ -17,10 +17,8 @@ from freecad.gridparams.core.config import (
 from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
 from freecad.gridparams.core.varset_export import VarSetCsvOptions
-from . import export_helpers
-from . import varset_export
 
-from . import selection
+from . import export_helpers, persistence, selection, varset_export
 
 _VALUE_PLACEHOLDERS = {
     "Fixed": "e.g. 12",
@@ -178,13 +176,14 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.doc = doc
         self.config_object_name = config_object_name
         self._selected_object_names = []
+        self._last_export_folder = ""
         self._csv_options = VarSetCsvOptions()
         self.resize(900, 650)
 
         config_obj = self._require_config_object()
         try:
             config = persistence.load_config(config_obj) or GridConfig(
-                base_name=config_obj.Label
+                base_name=doc.Label
             )
         except ConfigSchemaError as exc:
             QtWidgets.QMessageBox.warning(
@@ -194,7 +193,7 @@ class GridParamsDialog(QtWidgets.QDialog):
                 "Starting from a blank configuration instead -- the previously saved one is "
                 "left untouched in the document until you explicitly Save over it.",
             )
-            config = GridConfig(base_name=config_obj.Label)
+            config = GridConfig(base_name=doc.Label)
         self._items = list(config.items)
 
         self.setWindowTitle(f"Grid Params Export — {config_obj.Label}")
@@ -214,7 +213,8 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _make_separator(self):
         frame = QtWidgets.QFrame()
         frame.setFrameShape(QtWidgets.QFrame.HLine)
-        frame.setFrameShadow(QtWidgets.QFrame.Sunken)
+        frame.setFixedHeight(2)
+        frame.setStyleSheet("QFrame { border: none; background-color: palette(mid); }")
         return frame
 
     def _build_ui(self):
@@ -330,25 +330,48 @@ class GridParamsDialog(QtWidgets.QDialog):
         objects_buttons.addStretch(1)
         export_layout.addLayout(objects_buttons)
 
-        combine_row = QtWidgets.QHBoxLayout()
-        self.combine_radio = QtWidgets.QRadioButton("Combine into one file")
-        self.separate_radio = QtWidgets.QRadioButton("One file per object")
-        self.separate_radio.setChecked(True)
-        self.export_mode_group = QtWidgets.QButtonGroup(self)
-        self.export_mode_group.addButton(self.combine_radio)
-        self.export_mode_group.addButton(self.separate_radio)
-        combine_row.addWidget(self.combine_radio)
-        combine_row.addWidget(self.separate_radio)
-        combine_row.addStretch(1)
-        export_layout.addLayout(combine_row)
+        multi_part_tooltip = (
+            "Controls how a variation is exported when it includes more than one part.\n"
+            '"Combine parts into one file" merges all of the variation\'s parts into a '
+            "single output file.\n"
+            '"One file per part" exports each part as its own file, using the part\'s '
+            "body label (see below) to keep the filenames unique."
+        )
 
-        body_name_row = QtWidgets.QHBoxLayout()
+        self.multi_part_row_widget = QtWidgets.QWidget()
+        multi_part_row = QtWidgets.QHBoxLayout(self.multi_part_row_widget)
+        multi_part_row.setContentsMargins(0, 0, 0, 0)
+
+        multi_part_label = QtWidgets.QLabel("Multi part export per variation:")
+        multi_part_label.setToolTip(multi_part_tooltip)
+        multi_part_info_btn = QtWidgets.QToolButton()
+        multi_part_info_btn.setIcon(
+            self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxInformation)
+        )
+        multi_part_info_btn.setAutoRaise(True)
+        multi_part_info_btn.setToolTip(multi_part_tooltip)
+
+        self.multi_part_combo = QtWidgets.QComboBox()
+        self.multi_part_combo.addItems(
+            ["Combine parts into one file", "One file per part"]
+        )
+        self.multi_part_combo.setCurrentIndex(1)
+
+        multi_part_row.addWidget(multi_part_label)
+        multi_part_row.addWidget(multi_part_info_btn)
+        multi_part_row.addWidget(self.multi_part_combo)
+        multi_part_row.addStretch(1)
+        export_layout.addWidget(self.multi_part_row_widget)
+
+        self.body_name_row_widget = QtWidgets.QWidget()
+        body_name_row = QtWidgets.QHBoxLayout(self.body_name_row_widget)
+        body_name_row.setContentsMargins(0, 0, 0, 0)
         body_name_row.addSpacing(20)
         self.prepend_body_radio = QtWidgets.QRadioButton(
-            "Prepend body name to exported variation names"
+            "Prepend body label to exported variation names"
         )
         self.append_body_radio = QtWidgets.QRadioButton(
-            "Append body name to exported variation names"
+            "Append body label to exported variation names"
         )
         self.append_body_radio.setChecked(True)
         self.body_name_group = QtWidgets.QButtonGroup(self)
@@ -357,32 +380,33 @@ class GridParamsDialog(QtWidgets.QDialog):
         body_name_row.addWidget(self.prepend_body_radio)
         body_name_row.addWidget(self.append_body_radio)
         body_name_row.addStretch(1)
-        export_layout.addLayout(body_name_row)
+        export_layout.addWidget(self.body_name_row_widget)
 
-        self.combine_radio.toggled.connect(self._update_body_name_radios_enabled)
-        self.separate_radio.toggled.connect(self._update_body_name_radios_enabled)
+        self.multi_part_combo.currentIndexChanged.connect(
+            self._update_body_name_radios_enabled
+        )
         self._update_body_name_radios_enabled()
-
-        folder_row = QtWidgets.QHBoxLayout()
-        self.output_folder_edit = QtWidgets.QLineEdit()
-        browse_btn = QtWidgets.QPushButton("Browse...")
-        browse_btn.clicked.connect(self._browse_folder)
-        folder_row.addWidget(QtWidgets.QLabel("Export folder"))
-        folder_row.addWidget(self.output_folder_edit, stretch=1)
-        folder_row.addWidget(browse_btn)
-        export_layout.addLayout(folder_row)
 
         layout.addWidget(export_group)
 
         footer = QtWidgets.QHBoxLayout()
         save_btn = QtWidgets.QPushButton("Save")
         save_btn.clicked.connect(self._on_save)
-        run_btn = QtWidgets.QPushButton("Run Export")
+        save_close_btn = QtWidgets.QPushButton("Save and Close")
+        save_close_btn.clicked.connect(self._on_save_and_close)
+        run_btn = QtWidgets.QPushButton("Export")
         run_btn.clicked.connect(self._on_run_export)
+        export_to_btn = QtWidgets.QPushButton("Export to...")
+        export_to_btn.setToolTip(
+            "Pick a folder and export all variations there directly."
+        )
+        export_to_btn.clicked.connect(self._on_export_to_folder)
         close_btn = QtWidgets.QPushButton("Close")
         close_btn.clicked.connect(self.close)
         footer.addWidget(save_btn)
+        footer.addWidget(save_close_btn)
         footer.addWidget(run_btn)
+        footer.addWidget(export_to_btn)
         footer.addStretch(1)
         footer.addWidget(close_btn)
         layout.addLayout(footer)
@@ -403,10 +427,11 @@ class GridParamsDialog(QtWidgets.QDialog):
             self.items_list.setCurrentRow(0)
 
         self._selected_object_names = list(config.export_settings.selected_object_names)
+        self._last_export_folder = config.export_settings.last_export_folder
         self._refresh_objects_table()
-        self.combine_radio.setChecked(config.export_settings.combine)
-        self.separate_radio.setChecked(not config.export_settings.combine)
-        self.output_folder_edit.setText(config.export_settings.last_export_folder)
+        self.multi_part_combo.setCurrentIndex(
+            0 if config.export_settings.combine else 1
+        )
         if config.export_settings.body_name_placement == "prepend":
             self.prepend_body_radio.setChecked(True)
         else:
@@ -583,9 +608,9 @@ class GridParamsDialog(QtWidgets.QDialog):
             naming_template=self.naming_template_edit.text() or "{base_name}",
             items=list(self._items),
             export_settings=ExportSettings(
-                combine=self.combine_radio.isChecked(),
+                combine=self.multi_part_combo.currentIndex() == 0,
                 selected_object_names=list(self._selected_object_names),
-                last_export_folder=self.output_folder_edit.text(),
+                last_export_folder=self._last_export_folder,
                 body_name_placement="prepend"
                 if self.prepend_body_radio.isChecked()
                 else "append",
@@ -601,7 +626,7 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _refresh_preview(self):
         try:
             config = self._build_config_from_widgets()
-            variations = expand_config(config)
+            variations = expand_config(config, document_label=self.doc.Label)
         except Exception as exc:
             self.status_label.setText(f"Error: {exc}")
             return
@@ -614,7 +639,7 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _show_variations_dialog(self):
         try:
             config = self._build_config_from_widgets()
-            variations = expand_config(config)
+            variations = expand_config(config, document_label=self.doc.Label)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, "GridParams", f"Error: {exc}")
             return
@@ -639,6 +664,11 @@ class GridParamsDialog(QtWidgets.QDialog):
             obj = self.doc.getObject(name)
             label = obj.Label if obj is not None else f"{name} (missing)"
             self.objects_table.setItem(row, 0, QtWidgets.QTableWidgetItem(label))
+        self._update_multi_part_visibility()
+
+    def _update_multi_part_visibility(self):
+        self.multi_part_row_widget.setVisible(len(self._selected_object_names) > 1)
+        self._update_body_name_radios_enabled()
 
     def _add_objects(self):
         existing = set(self._selected_object_names)
@@ -666,16 +696,13 @@ class GridParamsDialog(QtWidgets.QDialog):
         self._refresh_objects_table()
 
     def _update_body_name_radios_enabled(self):
-        enabled = self.separate_radio.isChecked()
-        self.prepend_body_radio.setEnabled(enabled)
-        self.append_body_radio.setEnabled(enabled)
-
-    def _browse_folder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Select export folder", self.output_folder_edit.text()
+        show = (
+            len(self._selected_object_names) > 1
+            and self.multi_part_combo.currentIndex() == 1
         )
-        if folder:
-            self.output_folder_edit.setText(folder)
+        self.body_name_row_widget.setVisible(show)
+        self.prepend_body_radio.setEnabled(show)
+        self.append_body_radio.setEnabled(show)
 
     def _on_export_varset_csv(self):
         varset = self.doc.getObject(self.varset_combo.currentText())
@@ -685,11 +712,12 @@ class GridParamsDialog(QtWidgets.QDialog):
             )
             return
         properties = varset_export.collect_properties(varset)
+        default_folder = export_helpers.compute_output_folder(self.doc)
         csv_dialog = varset_export.VarSetCsvExportDialog(
             varset,
             properties,
             self._csv_options,
-            default_folder=self.output_folder_edit.text(),
+            default_folder=str(default_folder) if default_folder else "",
             parent=self,
         )
         if csv_dialog.exec() == QtWidgets.QDialog.Accepted:
@@ -697,26 +725,111 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     # -- Save / Run --------------------------------------------------------
 
-    def _on_save(self):
+    def _save_config(self):
         config = self._build_config_from_widgets()
         persistence.save_config(self._require_config_object(), config)
+
+    def _on_save(self):
+        self._save_config()
         QtWidgets.QMessageBox.information(
             self, "GridParams", "Configuration saved to document."
         )
 
-    def _on_run_export(self):
-        config = self._build_config_from_widgets()
-        if not self.combine_radio.isChecked() and not (
+    def _on_save_and_close(self):
+        self._save_config()
+        self.close()
+
+    def closeEvent(self, event):
+        _open_dialogs.pop((self.doc.Name, self.config_object_name), None)
+        super().closeEvent(event)
+
+    def _multi_part_choice_is_valid(self):
+        if self.multi_part_combo.currentIndex() == 1 and not (
             self.prepend_body_radio.isChecked() or self.append_body_radio.isChecked()
         ):
             QtWidgets.QMessageBox.critical(
                 self,
                 "GridParams",
-                "Choose whether to prepend or append the body name when exporting one file per object.",
+                "Choose whether to prepend or append the body label when exporting one file per object.",
             )
+            return False
+        return True
+
+    def _on_run_export(self):
+        config = self._build_config_from_widgets()
+        if not self._multi_part_choice_is_valid():
             return
 
         persistence.save_config(self._require_config_object(), config)
         export_helpers.run_export_with_progress(
             self.doc, config, parent=self, disable_widget=self
         )
+
+    def _on_export_to_folder(self):
+        config = self._build_config_from_widgets()
+        if not self._multi_part_choice_is_valid():
+            return
+
+        export_helpers.export_to_folder_with_progress(
+            self.doc, config, parent=self, disable_widget=self
+        )
+        self._last_export_folder = config.export_settings.last_export_folder
+        persistence.save_config(self._require_config_object(), config)
+
+
+# -- Open-dialog tracking --------------------------------------------------
+#
+# Keeps at most one GridParamsDialog per (document, config object) so that
+# double-clicking/re-invoking the same config brings the existing dialog to
+# front instead of opening a conflicting duplicate, and so that closing a
+# document can close whichever of its dialogs are still open.
+
+_open_dialogs: dict[tuple[str, str], GridParamsDialog] = {}
+_document_observer_registered = False
+
+
+class _DocumentCloseObserver:
+    def slotDeletedDocument(self, doc):
+        _close_dialogs_for_document(doc.Name)
+
+
+def _close_dialogs_for_document(doc_name):
+    for key in [key for key in _open_dialogs if key[0] == doc_name]:
+        dialog = _open_dialogs.pop(key, None)
+        if dialog is not None:
+            try:
+                dialog.close()
+            except RuntimeError:
+                pass  # underlying Qt widget was already destroyed
+
+
+def _ensure_document_observer_registered():
+    global _document_observer_registered
+    if not _document_observer_registered:
+        App.addDocumentObserver(_DocumentCloseObserver())
+        _document_observer_registered = True
+
+
+def open_or_focus(doc, config_object_name, parent=None):
+    """Show the GridParamsDialog for (doc, config_object_name).
+
+    Reuses and raises an already-open dialog for the same config object instead of
+    opening a second, conflicting one.
+    """
+    _ensure_document_observer_registered()
+    key = (doc.Name, config_object_name)
+    existing = _open_dialogs.get(key)
+    if existing is not None:
+        try:
+            existing.setWindowState(existing.windowState() & ~QtCore.Qt.WindowMinimized)
+            existing.show()
+            existing.raise_()
+            existing.activateWindow()
+            return existing
+        except RuntimeError:
+            _open_dialogs.pop(key, None)  # underlying Qt widget was already destroyed
+
+    dialog = GridParamsDialog(doc, config_object_name, parent=parent)
+    _open_dialogs[key] = dialog
+    dialog.show()
+    return dialog

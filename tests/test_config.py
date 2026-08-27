@@ -47,6 +47,16 @@ def test_single_dict_grid_expands_via_cartesian_product_with_template_naming():
     assert [v.name for v in variations] == ["Base - L1", "Base - L2"]
 
 
+def test_document_label_placeholder_is_passed_through():
+    config = GridConfig(
+        base_name="Base",
+        naming_template="{document_label} - {base_name}",
+        items=[GridItem(params={})],
+    )
+    variations = expand_config(config, document_label="MyDocument")
+    assert [v.name for v in variations] == ["MyDocument - Base"]
+
+
 def test_list_of_dicts_grid_expands_independently():
     config = GridConfig(
         base_name="Base",

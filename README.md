@@ -26,7 +26,7 @@ crossed with each other).
 Each item has an optional name template; if left blank it falls back to the global default
 template. Template can be filled-in using parameters like `"{base_name} - CableLength{Base_CableLength}"`.
 If a template lacks a placeholder needed to distinguish multiple resulting combinations, the
-preview highlights the resulting duplicate names and "Run Export" refuses to run until it's
+preview highlights the resulting duplicate names and "Export" refuses to run until it's
 fixed.
 
 ![Grid definition and variations preview](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/variation-dialog.png)
