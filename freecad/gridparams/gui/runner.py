@@ -33,13 +33,19 @@ def run_export(
     if duplicates:
         raise DuplicateVariationNamesError(duplicates)
 
+    object_labels = {
+        name: obj.Label
+        for name in config.export_settings.selected_object_names
+        if (obj := doc.getObject(name)) is not None
+    }
+
     written = []
     total = len(variations)
     for index, variation in enumerate(variations, start=1):
         try:
             apply_variation(doc, config.varset_object_name, variation)
             for job in build_export_jobs_for_variation(
-                variation, config.export_settings
+                variation, config.export_settings, object_labels
             ):
                 objects = resolve_objects(doc, job.objects)
                 path = output_folder / job.output_stem

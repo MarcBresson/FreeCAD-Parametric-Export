@@ -64,3 +64,33 @@ def test_prepend_body_name_has_no_effect_when_not_split():
     jobs = build_export_jobs_for_variation(variation, settings)
     assert len(jobs) == 1
     assert jobs[0].output_stem == "XS"
+
+
+def test_body_label_is_used_instead_of_internal_name_when_provided():
+    variation = Variation(name="XS", params={})
+    settings = ExportSettings(
+        combine=False,
+        selected_object_names=["Body001", "Body003"],
+        body_name_placement="append",
+    )
+    jobs = build_export_jobs_for_variation(
+        variation,
+        settings,
+        object_labels={"Body001": "Left Arm", "Body003": "Right Arm"},
+    )
+    assert jobs[0].output_stem == "XS - Left Arm"
+    assert jobs[1].output_stem == "XS - Right Arm"
+
+
+def test_body_label_falls_back_to_internal_name_when_missing():
+    variation = Variation(name="XS", params={})
+    settings = ExportSettings(
+        combine=False,
+        selected_object_names=["Body001", "Body003"],
+        body_name_placement="append",
+    )
+    jobs = build_export_jobs_for_variation(
+        variation, settings, object_labels={"Body001": "Left Arm"}
+    )
+    assert jobs[0].output_stem == "XS - Left Arm"
+    assert jobs[1].output_stem == "XS - Body003"

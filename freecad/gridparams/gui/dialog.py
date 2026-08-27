@@ -346,10 +346,10 @@ class GridParamsDialog(QtWidgets.QDialog):
         body_name_row = QtWidgets.QHBoxLayout()
         body_name_row.addSpacing(20)
         self.prepend_body_radio = QtWidgets.QRadioButton(
-            "Prepend body name to exported variation names"
+            "Prepend body label to exported variation names"
         )
         self.append_body_radio = QtWidgets.QRadioButton(
-            "Append body name to exported variation names"
+            "Append body label to exported variation names"
         )
         self.append_body_radio.setChecked(True)
         self.body_name_group = QtWidgets.QButtonGroup(self)
@@ -738,7 +738,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.critical(
                 self,
                 "GridParams",
-                "Choose whether to prepend or append the body name when exporting one file per object.",
+                "Choose whether to prepend or append the body label when exporting one file per object.",
             )
             return
 

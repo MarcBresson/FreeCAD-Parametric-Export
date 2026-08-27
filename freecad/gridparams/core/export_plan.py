@@ -21,8 +21,11 @@ class ExportJob:
 
 
 def build_export_jobs_for_variation(
-    variation: Variation, settings: ExportSettings
+    variation: Variation,
+    settings: ExportSettings,
+    object_labels: dict[str, str] | None = None,
 ) -> list[ExportJob]:
+    object_labels = object_labels or {}
     names = settings.selected_object_names
     groups = (
         [names] if settings.combine or len(names) <= 1 else [[name] for name in names]
@@ -31,10 +34,11 @@ def build_export_jobs_for_variation(
     for group in groups:
         stem = sanitize_filename(variation.name)
         if len(groups) > 1:
+            label = sanitize_filename(object_labels.get(group[0], group[0]))
             stem = (
-                f"{group[0]} - {stem}"
+                f"{label} - {stem}"
                 if settings.body_name_placement == "prepend"
-                else f"{stem} - {group[0]}"
+                else f"{stem} - {label}"
             )
         jobs.append(
             ExportJob(variation_name=variation.name, output_stem=stem, objects=group)
