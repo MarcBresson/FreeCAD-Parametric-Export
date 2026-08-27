@@ -4,10 +4,9 @@ All expansion/naming/export-planning logic is delegated to gridparams.core -- th
 module only translates between Qt widgets and that core's dataclasses.
 """
 
-import FreeCAD as App
 from PySide import QtCore, QtGui, QtWidgets
 
-from . import persistence
+import FreeCAD as App
 from freecad.gridparams.core.config import (
     ConfigSchemaError,
     ExportSettings,
@@ -18,10 +17,8 @@ from freecad.gridparams.core.config import (
 from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
 from freecad.gridparams.core.varset_export import VarSetCsvOptions
-from . import export_helpers
-from . import varset_export
 
-from . import selection
+from . import export_helpers, persistence, selection, varset_export
 
 _VALUE_PLACEHOLDERS = {
     "Fixed": "e.g. 12",
@@ -215,7 +212,8 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _make_separator(self):
         frame = QtWidgets.QFrame()
         frame.setFrameShape(QtWidgets.QFrame.HLine)
-        frame.setFrameShadow(QtWidgets.QFrame.Sunken)
+        frame.setFixedHeight(2)
+        frame.setStyleSheet("QFrame { border: none; background-color: palette(mid); }")
         return frame
 
     def _build_ui(self):
@@ -331,19 +329,42 @@ class GridParamsDialog(QtWidgets.QDialog):
         objects_buttons.addStretch(1)
         export_layout.addLayout(objects_buttons)
 
-        combine_row = QtWidgets.QHBoxLayout()
-        self.combine_radio = QtWidgets.QRadioButton("Combine into one file")
-        self.separate_radio = QtWidgets.QRadioButton("One file per object")
-        self.separate_radio.setChecked(True)
-        self.export_mode_group = QtWidgets.QButtonGroup(self)
-        self.export_mode_group.addButton(self.combine_radio)
-        self.export_mode_group.addButton(self.separate_radio)
-        combine_row.addWidget(self.combine_radio)
-        combine_row.addWidget(self.separate_radio)
-        combine_row.addStretch(1)
-        export_layout.addLayout(combine_row)
+        multi_part_tooltip = (
+            "Controls how a variation is exported when it includes more than one part.\n"
+            '"Combine parts into one file" merges all of the variation\'s parts into a '
+            "single output file.\n"
+            '"One file per part" exports each part as its own file, using the part\'s '
+            "body label (see below) to keep the filenames unique."
+        )
 
-        body_name_row = QtWidgets.QHBoxLayout()
+        self.multi_part_row_widget = QtWidgets.QWidget()
+        multi_part_row = QtWidgets.QHBoxLayout(self.multi_part_row_widget)
+        multi_part_row.setContentsMargins(0, 0, 0, 0)
+
+        multi_part_label = QtWidgets.QLabel("Multi part export per variation:")
+        multi_part_label.setToolTip(multi_part_tooltip)
+        multi_part_info_btn = QtWidgets.QToolButton()
+        multi_part_info_btn.setIcon(
+            self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxInformation)
+        )
+        multi_part_info_btn.setAutoRaise(True)
+        multi_part_info_btn.setToolTip(multi_part_tooltip)
+
+        self.multi_part_combo = QtWidgets.QComboBox()
+        self.multi_part_combo.addItems(
+            ["Combine parts into one file", "One file per part"]
+        )
+        self.multi_part_combo.setCurrentIndex(1)
+
+        multi_part_row.addWidget(multi_part_label)
+        multi_part_row.addWidget(multi_part_info_btn)
+        multi_part_row.addWidget(self.multi_part_combo)
+        multi_part_row.addStretch(1)
+        export_layout.addWidget(self.multi_part_row_widget)
+
+        self.body_name_row_widget = QtWidgets.QWidget()
+        body_name_row = QtWidgets.QHBoxLayout(self.body_name_row_widget)
+        body_name_row.setContentsMargins(0, 0, 0, 0)
         body_name_row.addSpacing(20)
         self.prepend_body_radio = QtWidgets.QRadioButton(
             "Prepend body label to exported variation names"
@@ -358,11 +379,14 @@ class GridParamsDialog(QtWidgets.QDialog):
         body_name_row.addWidget(self.prepend_body_radio)
         body_name_row.addWidget(self.append_body_radio)
         body_name_row.addStretch(1)
-        export_layout.addLayout(body_name_row)
+        export_layout.addWidget(self.body_name_row_widget)
 
-        self.combine_radio.toggled.connect(self._update_body_name_radios_enabled)
-        self.separate_radio.toggled.connect(self._update_body_name_radios_enabled)
+        self.multi_part_combo.currentIndexChanged.connect(
+            self._update_body_name_radios_enabled
+        )
         self._update_body_name_radios_enabled()
+
+        export_layout.addWidget(self._make_separator())
 
         folder_row = QtWidgets.QHBoxLayout()
         self.output_folder_edit = QtWidgets.QLineEdit()
@@ -419,8 +443,9 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         self._selected_object_names = list(config.export_settings.selected_object_names)
         self._refresh_objects_table()
-        self.combine_radio.setChecked(config.export_settings.combine)
-        self.separate_radio.setChecked(not config.export_settings.combine)
+        self.multi_part_combo.setCurrentIndex(
+            0 if config.export_settings.combine else 1
+        )
         self.output_folder_edit.setText(config.export_settings.last_export_folder)
         if config.export_settings.body_name_placement == "prepend":
             self.prepend_body_radio.setChecked(True)
@@ -598,7 +623,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             naming_template=self.naming_template_edit.text() or "{base_name}",
             items=list(self._items),
             export_settings=ExportSettings(
-                combine=self.combine_radio.isChecked(),
+                combine=self.multi_part_combo.currentIndex() == 0,
                 selected_object_names=list(self._selected_object_names),
                 last_export_folder=self.output_folder_edit.text(),
                 body_name_placement="prepend"
@@ -654,6 +679,11 @@ class GridParamsDialog(QtWidgets.QDialog):
             obj = self.doc.getObject(name)
             label = obj.Label if obj is not None else f"{name} (missing)"
             self.objects_table.setItem(row, 0, QtWidgets.QTableWidgetItem(label))
+        self._update_multi_part_visibility()
+
+    def _update_multi_part_visibility(self):
+        self.multi_part_row_widget.setVisible(len(self._selected_object_names) > 1)
+        self._update_body_name_radios_enabled()
 
     def _add_objects(self):
         existing = set(self._selected_object_names)
@@ -681,9 +711,13 @@ class GridParamsDialog(QtWidgets.QDialog):
         self._refresh_objects_table()
 
     def _update_body_name_radios_enabled(self):
-        enabled = self.separate_radio.isChecked()
-        self.prepend_body_radio.setEnabled(enabled)
-        self.append_body_radio.setEnabled(enabled)
+        show = (
+            len(self._selected_object_names) > 1
+            and self.multi_part_combo.currentIndex() == 1
+        )
+        self.body_name_row_widget.setVisible(show)
+        self.prepend_body_radio.setEnabled(show)
+        self.append_body_radio.setEnabled(show)
 
     def _browse_folder(self):
         folder = QtWidgets.QFileDialog.getExistingDirectory(
@@ -732,7 +766,7 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _on_run_export(self):
         config = self._build_config_from_widgets()
-        if not self.combine_radio.isChecked() and not (
+        if self.multi_part_combo.currentIndex() == 1 and not (
             self.prepend_body_radio.isChecked() or self.append_body_radio.isChecked()
         ):
             QtWidgets.QMessageBox.critical(
