@@ -44,7 +44,7 @@ def run_export(
                 objects = resolve_objects(doc, job.objects)
                 path = output_folder / job.output_stem
                 export_objects(objects, path)
-                written.append(path.with_suffix(".3mf"))
+                written.append(path.with_name(path.name + ".3mf"))
         except Exception as exc:
             raise ExportAbortedError(
                 f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",
