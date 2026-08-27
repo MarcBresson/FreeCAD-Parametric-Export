@@ -46,6 +46,10 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
     progress.setWindowModality(QtCore.Qt.WindowModal)
     if disable_widget is not None:
         disable_widget.setEnabled(False)
+        # Disabling `disable_widget` cascades to `progress` when it is one of its
+        # ancestors (e.g. the "Run Export" button's own dialog), which would freeze
+        # the progress bar. Explicitly re-enable it so it keeps updating/responding.
+        progress.setEnabled(True)
 
     def on_progress(done, total):
         progress.setValue(done)
