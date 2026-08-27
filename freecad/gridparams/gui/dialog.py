@@ -365,9 +365,20 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         folder_row = QtWidgets.QHBoxLayout()
         self.output_folder_edit = QtWidgets.QLineEdit()
+        output_folder_tooltip = (
+            "If left empty, files are saved next to the FreeCAD document.\n"
+            'A relative path (one that doesn\'t start with "/") is resolved\n'
+            "relative to the FreeCAD document's location."
+        )
+        self.output_folder_edit.setToolTip(output_folder_tooltip)
+        self.output_folder_edit.setPlaceholderText(
+            "Same folder as the FreeCAD document"
+        )
         browse_btn = QtWidgets.QPushButton("Browse...")
         browse_btn.clicked.connect(self._browse_folder)
-        folder_row.addWidget(QtWidgets.QLabel("Export folder"))
+        folder_label = QtWidgets.QLabel("Export folder")
+        folder_label.setToolTip(output_folder_tooltip)
+        folder_row.addWidget(folder_label)
         folder_row.addWidget(self.output_folder_edit, stretch=1)
         folder_row.addWidget(browse_btn)
         export_layout.addLayout(folder_row)
