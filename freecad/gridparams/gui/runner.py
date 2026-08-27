@@ -8,7 +8,7 @@ from freecad.gridparams.core.variation import find_duplicate_names
 
 from .mesh_export import export_objects
 from .selection import resolve_objects
-from .varset_apply import apply_variation
+from .varset_apply import apply_variation, capture_params, restore_params
 
 
 class DuplicateVariationNamesError(Exception):
@@ -39,23 +39,29 @@ def run_export(
         if (obj := doc.getObject(name)) is not None
     }
 
+    param_names = {name for variation in variations for name in variation.params}
+    original_values = capture_params(doc, config.varset_object_name, param_names)
+
     written = []
     total = len(variations)
-    for index, variation in enumerate(variations, start=1):
-        try:
-            apply_variation(doc, config.varset_object_name, variation)
-            for job in build_export_jobs_for_variation(
-                variation, config.export_settings, object_labels
-            ):
-                objects = resolve_objects(doc, job.objects)
-                path = output_folder / job.output_stem
-                export_objects(objects, path)
-                written.append(path.with_name(path.name + ".3mf"))
-        except Exception as exc:
-            raise ExportAbortedError(
-                f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",
-                written=written,
-            ) from exc
-        if progress_callback is not None:
-            progress_callback(index, total)
+    try:
+        for index, variation in enumerate(variations, start=1):
+            try:
+                apply_variation(doc, config.varset_object_name, variation)
+                for job in build_export_jobs_for_variation(
+                    variation, config.export_settings, object_labels
+                ):
+                    objects = resolve_objects(doc, job.objects)
+                    path = output_folder / job.output_stem
+                    export_objects(objects, path)
+                    written.append(path.with_name(path.name + ".3mf"))
+            except Exception as exc:
+                raise ExportAbortedError(
+                    f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",
+                    written=written,
+                ) from exc
+            if progress_callback is not None:
+                progress_callback(index, total)
+    finally:
+        restore_params(doc, config.varset_object_name, original_values)
     return written
