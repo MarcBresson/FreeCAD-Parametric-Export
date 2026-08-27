@@ -37,10 +37,9 @@ class ConfigContainerViewProxy:
 
 
 def _edit_config(obj):
-    from .dialog import GridParamsDialog
+    from .dialog import open_or_focus
 
-    dialog = GridParamsDialog(obj.Document, obj.Name, parent=Gui.getMainWindow())
-    dialog.show()
+    open_or_focus(obj.Document, obj.Name, parent=Gui.getMainWindow())
 
 
 def _export_using_config(obj):

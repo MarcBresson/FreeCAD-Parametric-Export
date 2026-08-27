@@ -4,6 +4,7 @@ All expansion/naming/export-planning logic is delegated to gridparams.core -- th
 module only translates between Qt widgets and that core's dataclasses.
 """
 
+import FreeCAD as App
 from PySide import QtCore, QtGui, QtWidgets
 
 from . import persistence
@@ -388,11 +389,14 @@ class GridParamsDialog(QtWidgets.QDialog):
         footer = QtWidgets.QHBoxLayout()
         save_btn = QtWidgets.QPushButton("Save")
         save_btn.clicked.connect(self._on_save)
+        save_close_btn = QtWidgets.QPushButton("Save and Close")
+        save_close_btn.clicked.connect(self._on_save_and_close)
         run_btn = QtWidgets.QPushButton("Run Export")
         run_btn.clicked.connect(self._on_run_export)
         close_btn = QtWidgets.QPushButton("Close")
         close_btn.clicked.connect(self.close)
         footer.addWidget(save_btn)
+        footer.addWidget(save_close_btn)
         footer.addWidget(run_btn)
         footer.addStretch(1)
         footer.addWidget(close_btn)
@@ -708,12 +712,23 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     # -- Save / Run --------------------------------------------------------
 
-    def _on_save(self):
+    def _save_config(self):
         config = self._build_config_from_widgets()
         persistence.save_config(self._require_config_object(), config)
+
+    def _on_save(self):
+        self._save_config()
         QtWidgets.QMessageBox.information(
             self, "GridParams", "Configuration saved to document."
         )
+
+    def _on_save_and_close(self):
+        self._save_config()
+        self.close()
+
+    def closeEvent(self, event):
+        _open_dialogs.pop((self.doc.Name, self.config_object_name), None)
+        super().closeEvent(event)
 
     def _on_run_export(self):
         config = self._build_config_from_widgets()
@@ -731,3 +746,61 @@ class GridParamsDialog(QtWidgets.QDialog):
         export_helpers.run_export_with_progress(
             self.doc, config, parent=self, disable_widget=self
         )
+
+
+# -- Open-dialog tracking --------------------------------------------------
+#
+# Keeps at most one GridParamsDialog per (document, config object) so that
+# double-clicking/re-invoking the same config brings the existing dialog to
+# front instead of opening a conflicting duplicate, and so that closing a
+# document can close whichever of its dialogs are still open.
+
+_open_dialogs: dict[tuple[str, str], GridParamsDialog] = {}
+_document_observer_registered = False
+
+
+class _DocumentCloseObserver:
+    def slotDeletedDocument(self, doc):
+        _close_dialogs_for_document(doc.Name)
+
+
+def _close_dialogs_for_document(doc_name):
+    for key in [key for key in _open_dialogs if key[0] == doc_name]:
+        dialog = _open_dialogs.pop(key, None)
+        if dialog is not None:
+            try:
+                dialog.close()
+            except RuntimeError:
+                pass  # underlying Qt widget was already destroyed
+
+
+def _ensure_document_observer_registered():
+    global _document_observer_registered
+    if not _document_observer_registered:
+        App.addDocumentObserver(_DocumentCloseObserver())
+        _document_observer_registered = True
+
+
+def open_or_focus(doc, config_object_name, parent=None):
+    """Show the GridParamsDialog for (doc, config_object_name).
+
+    Reuses and raises an already-open dialog for the same config object instead of
+    opening a second, conflicting one.
+    """
+    _ensure_document_observer_registered()
+    key = (doc.Name, config_object_name)
+    existing = _open_dialogs.get(key)
+    if existing is not None:
+        try:
+            existing.setWindowState(existing.windowState() & ~QtCore.Qt.WindowMinimized)
+            existing.show()
+            existing.raise_()
+            existing.activateWindow()
+            return existing
+        except RuntimeError:
+            _open_dialogs.pop(key, None)  # underlying Qt widget was already destroyed
+
+    dialog = GridParamsDialog(doc, config_object_name, parent=parent)
+    _open_dialogs[key] = dialog
+    dialog.show()
+    return dialog
