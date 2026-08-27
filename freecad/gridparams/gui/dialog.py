@@ -176,6 +176,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.doc = doc
         self.config_object_name = config_object_name
         self._selected_object_names = []
+        self._last_export_folder = ""
         self._csv_options = VarSetCsvOptions()
         self.resize(900, 650)
 
@@ -386,28 +387,6 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         self._update_body_name_radios_enabled()
 
-        export_layout.addWidget(self._make_separator())
-
-        folder_row = QtWidgets.QHBoxLayout()
-        self.output_folder_edit = QtWidgets.QLineEdit()
-        output_folder_tooltip = (
-            "If left empty, files are saved next to the FreeCAD document.\n"
-            'A relative path (one that doesn\'t start with "/") is resolved\n'
-            "relative to the FreeCAD document's location."
-        )
-        self.output_folder_edit.setToolTip(output_folder_tooltip)
-        self.output_folder_edit.setPlaceholderText(
-            "Same folder as the FreeCAD document"
-        )
-        browse_btn = QtWidgets.QPushButton("Browse...")
-        browse_btn.clicked.connect(self._browse_folder)
-        folder_label = QtWidgets.QLabel("Export folder")
-        folder_label.setToolTip(output_folder_tooltip)
-        folder_row.addWidget(folder_label)
-        folder_row.addWidget(self.output_folder_edit, stretch=1)
-        folder_row.addWidget(browse_btn)
-        export_layout.addLayout(folder_row)
-
         layout.addWidget(export_group)
 
         footer = QtWidgets.QHBoxLayout()
@@ -415,13 +394,19 @@ class GridParamsDialog(QtWidgets.QDialog):
         save_btn.clicked.connect(self._on_save)
         save_close_btn = QtWidgets.QPushButton("Save and Close")
         save_close_btn.clicked.connect(self._on_save_and_close)
-        run_btn = QtWidgets.QPushButton("Run Export")
+        run_btn = QtWidgets.QPushButton("Export")
         run_btn.clicked.connect(self._on_run_export)
+        export_to_btn = QtWidgets.QPushButton("Export to...")
+        export_to_btn.setToolTip(
+            "Pick a folder and export all variations there directly."
+        )
+        export_to_btn.clicked.connect(self._on_export_to_folder)
         close_btn = QtWidgets.QPushButton("Close")
         close_btn.clicked.connect(self.close)
         footer.addWidget(save_btn)
         footer.addWidget(save_close_btn)
         footer.addWidget(run_btn)
+        footer.addWidget(export_to_btn)
         footer.addStretch(1)
         footer.addWidget(close_btn)
         layout.addLayout(footer)
@@ -442,11 +427,11 @@ class GridParamsDialog(QtWidgets.QDialog):
             self.items_list.setCurrentRow(0)
 
         self._selected_object_names = list(config.export_settings.selected_object_names)
+        self._last_export_folder = config.export_settings.last_export_folder
         self._refresh_objects_table()
         self.multi_part_combo.setCurrentIndex(
             0 if config.export_settings.combine else 1
         )
-        self.output_folder_edit.setText(config.export_settings.last_export_folder)
         if config.export_settings.body_name_placement == "prepend":
             self.prepend_body_radio.setChecked(True)
         else:
@@ -625,7 +610,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             export_settings=ExportSettings(
                 combine=self.multi_part_combo.currentIndex() == 0,
                 selected_object_names=list(self._selected_object_names),
-                last_export_folder=self.output_folder_edit.text(),
+                last_export_folder=self._last_export_folder,
                 body_name_placement="prepend"
                 if self.prepend_body_radio.isChecked()
                 else "append",
@@ -719,13 +704,6 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.prepend_body_radio.setEnabled(show)
         self.append_body_radio.setEnabled(show)
 
-    def _browse_folder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Select export folder", self.output_folder_edit.text()
-        )
-        if folder:
-            self.output_folder_edit.setText(folder)
-
     def _on_export_varset_csv(self):
         varset = self.doc.getObject(self.varset_combo.currentText())
         if varset is None:
@@ -734,11 +712,12 @@ class GridParamsDialog(QtWidgets.QDialog):
             )
             return
         properties = varset_export.collect_properties(varset)
+        default_folder = export_helpers.compute_output_folder(self.doc)
         csv_dialog = varset_export.VarSetCsvExportDialog(
             varset,
             properties,
             self._csv_options,
-            default_folder=self.output_folder_edit.text(),
+            default_folder=str(default_folder) if default_folder else "",
             parent=self,
         )
         if csv_dialog.exec() == QtWidgets.QDialog.Accepted:
@@ -764,8 +743,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         _open_dialogs.pop((self.doc.Name, self.config_object_name), None)
         super().closeEvent(event)
 
-    def _on_run_export(self):
-        config = self._build_config_from_widgets()
+    def _multi_part_choice_is_valid(self):
         if self.multi_part_combo.currentIndex() == 1 and not (
             self.prepend_body_radio.isChecked() or self.append_body_radio.isChecked()
         ):
@@ -774,12 +752,29 @@ class GridParamsDialog(QtWidgets.QDialog):
                 "GridParams",
                 "Choose whether to prepend or append the body label when exporting one file per object.",
             )
+            return False
+        return True
+
+    def _on_run_export(self):
+        config = self._build_config_from_widgets()
+        if not self._multi_part_choice_is_valid():
             return
 
         persistence.save_config(self._require_config_object(), config)
         export_helpers.run_export_with_progress(
             self.doc, config, parent=self, disable_widget=self
         )
+
+    def _on_export_to_folder(self):
+        config = self._build_config_from_widgets()
+        if not self._multi_part_choice_is_valid():
+            return
+
+        export_helpers.export_to_folder_with_progress(
+            self.doc, config, parent=self, disable_widget=self
+        )
+        self._last_export_folder = config.export_settings.last_export_folder
+        persistence.save_config(self._require_config_object(), config)
 
 
 # -- Open-dialog tracking --------------------------------------------------

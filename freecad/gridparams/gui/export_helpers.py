@@ -2,7 +2,7 @@
 
 Pulled out of the dialog so the tree context menu's "Export using config" action can run an
 export straight from a saved GridConfig without duplicating the progress dialog and error
-messaging that already lives on the "Run Export" button.
+messaging that already lives on the "Export" button.
 """
 
 from pathlib import Path
@@ -12,7 +12,7 @@ from PySide import QtCore, QtWidgets
 from freecad.gridparams.core.config import expand_config
 from freecad.gridparams.core.variation import find_duplicate_names
 
-from . import runner
+from . import preferences, runner
 
 
 def _report_error(parent, message):
@@ -32,33 +32,27 @@ def _validate_variations(config, parent, document_label):
     return variations
 
 
-def _resolve_output_folder(doc, config, parent):
+def compute_output_folder(doc):
+    """Return the configured export folder as a Path (not guaranteed to exist), resolved
+    relative to `doc`'s own folder, or None if the document has not been saved yet."""
+    if not doc.FileName:
+        return None
+    doc_folder = Path(doc.FileName).parent
+    relative_path = preferences.get_export_relative_path()
+    return doc_folder / relative_path if relative_path else doc_folder
+
+
+def _resolve_output_folder(doc, parent):
     """Return the export folder as an absolute Path, or None (after reporting) if it
     can't be resolved or doesn't exist."""
-    output_folder_text = config.export_settings.last_export_folder
-    doc_folder = Path(doc.FileName).parent if doc.FileName else None
-
-    if not output_folder_text:
-        if doc_folder is None:
-            _report_error(
-                parent,
-                "No export folder set and the document has not been saved yet. "
-                "Save the document first or choose an export folder.",
-            )
-            return None
-        output_folder = doc_folder
-    else:
-        output_folder = Path(output_folder_text)
-        if not output_folder.is_absolute():
-            if doc_folder is None:
-                _report_error(
-                    parent,
-                    "Relative export folder is used but the document has not been "
-                    "saved yet. Save the document first or choose an absolute "
-                    "export folder.",
-                )
-                return None
-            output_folder = doc_folder / output_folder
+    output_folder = compute_output_folder(doc)
+    if output_folder is None:
+        _report_error(
+            parent,
+            "The document has not been saved yet. Save the document first so the "
+            "export folder can be resolved relative to it.",
+        )
+        return None
 
     if not output_folder.is_dir():
         _report_error(parent, f"Export folder does not exist: {output_folder}")
@@ -74,7 +68,7 @@ def _make_progress_dialog(parent, total, disable_widget):
     if disable_widget is not None:
         disable_widget.setEnabled(False)
         # Disabling `disable_widget` cascades to `progress` when it is one of its
-        # ancestors (e.g. the "Run Export" button's own dialog), which would freeze
+        # ancestors (e.g. the "Export" button's own dialog), which would freeze
         # the progress bar. Explicitly re-enable it so it keeps updating/responding.
         progress.setEnabled(True)
     return progress
@@ -86,19 +80,12 @@ def _close_progress(progress, disable_widget):
         disable_widget.setEnabled(True)
 
 
-def run_export_with_progress(doc, config, parent, disable_widget=None):
-    """Validate `config`, run the export behind a modal progress dialog, and report the
-    outcome via message boxes. Returns True on success, False if validation failed or the
-    export raised."""
-    variations = _validate_variations(config, parent, doc.Label)
-    if variations is None:
-        return False
-
-    output_folder = _resolve_output_folder(doc, config, parent)
-    if output_folder is None:
-        return False
-
-    progress = _make_progress_dialog(parent, len(variations), disable_widget)
+def _export_to_resolved_folder(
+    doc, config, output_folder, total, parent, disable_widget
+):
+    """Run the export to an already-resolved, already-existing `output_folder`, behind a
+    modal progress dialog, reporting the outcome via message boxes."""
+    progress = _make_progress_dialog(parent, total, disable_widget)
 
     def on_progress(done, total):
         progress.setValue(done)
@@ -122,3 +109,42 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
         parent, "GridParams", f"Exported {len(written)} file(s) to {output_folder}"
     )
     return True
+
+
+def run_export_with_progress(doc, config, parent, disable_widget=None):
+    """Validate `config`, run the export behind a modal progress dialog, and report the
+    outcome via message boxes. Returns True on success, False if validation failed or the
+    export raised."""
+    variations = _validate_variations(config, parent, doc.Label)
+    if variations is None:
+        return False
+
+    output_folder = _resolve_output_folder(doc, parent)
+    if output_folder is None:
+        return False
+
+    return _export_to_resolved_folder(
+        doc, config, output_folder, len(variations), parent, disable_widget
+    )
+
+
+def export_to_folder_with_progress(doc, config, parent, disable_widget=None):
+    """Validate `config`, prompt for a destination folder via a native picker, then run the
+    export there behind a modal progress dialog. Mutates `config.export_settings` in place
+    with the chosen folder (as `last_export_folder`) so the picker reopens there next time --
+    the caller is responsible for persisting that if it wants it remembered. Returns True on
+    success, False if validation failed, the user cancelled the picker, or the export raised."""
+    variations = _validate_variations(config, parent, doc.Label)
+    if variations is None:
+        return False
+
+    folder = QtWidgets.QFileDialog.getExistingDirectory(
+        parent, "Select export folder", config.export_settings.last_export_folder
+    )
+    if not folder:
+        return False
+    config.export_settings.last_export_folder = folder
+
+    return _export_to_resolved_folder(
+        doc, config, Path(folder), len(variations), parent, disable_widget
+    )

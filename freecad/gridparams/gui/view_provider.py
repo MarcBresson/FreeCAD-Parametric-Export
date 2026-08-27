@@ -28,6 +28,8 @@ class ConfigContainerViewProxy:
         edit_action.triggered.connect(lambda: _edit_config(vobj.Object))
         export_action = menu.addAction("Export using config")
         export_action.triggered.connect(lambda: _export_using_config(vobj.Object))
+        export_to_action = menu.addAction("Export to...")
+        export_to_action.triggered.connect(lambda: _export_to_folder(vobj.Object))
 
     def __getstate__(self):
         return None
@@ -64,3 +66,28 @@ def _export_using_config(obj):
     export_helpers.run_export_with_progress(
         obj.Document, config, parent=Gui.getMainWindow()
     )
+
+
+def _export_to_folder(obj):
+    from PySide import QtWidgets
+
+    from . import export_helpers
+
+    try:
+        config = persistence.load_config(obj)
+    except ConfigSchemaError as exc:
+        QtWidgets.QMessageBox.critical(
+            Gui.getMainWindow(), "GridParams", f"Could not load config: {exc}"
+        )
+        return
+    if config is None:
+        QtWidgets.QMessageBox.warning(
+            Gui.getMainWindow(),
+            "GridParams",
+            "Nothing saved yet -- open Edit and Save first.",
+        )
+        return
+    export_helpers.export_to_folder_with_progress(
+        obj.Document, config, parent=Gui.getMainWindow()
+    )
+    persistence.save_config(obj, config)
