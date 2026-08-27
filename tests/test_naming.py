@@ -19,3 +19,17 @@ def test_template_substitutes_base_name_and_params():
 def test_unknown_placeholder_raises():
     with pytest.raises(NamingTemplateError):
         resolve_name("{unknown_param}", base_name="Base", params={"a": 1})
+
+
+def test_template_substitutes_document_label():
+    result = resolve_name(
+        "{document_label} - {base_name}",
+        base_name="Cable winder",
+        params={},
+        document_label="MyDocument",
+    )
+    assert result == "MyDocument - Cable winder"
+
+
+def test_document_label_defaults_to_empty_string():
+    assert resolve_name("{document_label}", base_name="Base", params={}) == ""

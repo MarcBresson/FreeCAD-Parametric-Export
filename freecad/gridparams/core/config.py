@@ -105,7 +105,7 @@ class GridConfig:
     export_settings: ExportSettings = field(default_factory=ExportSettings)
 
 
-def expand_config(config: GridConfig) -> list[Variation]:
+def expand_config(config: GridConfig, document_label: str = "") -> list[Variation]:
     variations = []
     for item in config.items:
         template = (
@@ -116,7 +116,9 @@ def expand_config(config: GridConfig) -> list[Variation]:
         for resolved_params in ParameterGrid(item.params):
             variations.append(
                 Variation(
-                    name=resolve_name(template, config.base_name, resolved_params),
+                    name=resolve_name(
+                        template, config.base_name, resolved_params, document_label
+                    ),
                     params=resolved_params,
                 )
             )

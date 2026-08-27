@@ -184,7 +184,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         config_obj = self._require_config_object()
         try:
             config = persistence.load_config(config_obj) or GridConfig(
-                base_name=config_obj.Label
+                base_name=doc.Label
             )
         except ConfigSchemaError as exc:
             QtWidgets.QMessageBox.warning(
@@ -194,7 +194,7 @@ class GridParamsDialog(QtWidgets.QDialog):
                 "Starting from a blank configuration instead -- the previously saved one is "
                 "left untouched in the document until you explicitly Save over it.",
             )
-            config = GridConfig(base_name=config_obj.Label)
+            config = GridConfig(base_name=doc.Label)
         self._items = list(config.items)
 
         self.setWindowTitle(f"Grid Params Export — {config_obj.Label}")
@@ -612,7 +612,7 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _refresh_preview(self):
         try:
             config = self._build_config_from_widgets()
-            variations = expand_config(config)
+            variations = expand_config(config, document_label=self.doc.Label)
         except Exception as exc:
             self.status_label.setText(f"Error: {exc}")
             return
@@ -625,7 +625,7 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _show_variations_dialog(self):
         try:
             config = self._build_config_from_widgets()
-            variations = expand_config(config)
+            variations = expand_config(config, document_label=self.doc.Label)
         except Exception as exc:
             QtWidgets.QMessageBox.critical(self, "GridParams", f"Error: {exc}")
             return

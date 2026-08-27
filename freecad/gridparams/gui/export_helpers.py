@@ -19,9 +19,9 @@ def _report_error(parent, message):
     QtWidgets.QMessageBox.critical(parent, "GridParams", message)
 
 
-def _validate_variations(config, parent):
+def _validate_variations(config, parent, document_label):
     """Return the expanded variations, or None (after reporting) if validation fails."""
-    variations = expand_config(config)
+    variations = expand_config(config, document_label=document_label)
     duplicates = find_duplicate_names(variations)
     if duplicates:
         _report_error(parent, f"Duplicate variation name(s): {', '.join(duplicates)}")
@@ -90,7 +90,7 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
     """Validate `config`, run the export behind a modal progress dialog, and report the
     outcome via message boxes. Returns True on success, False if validation failed or the
     export raised."""
-    variations = _validate_variations(config, parent)
+    variations = _validate_variations(config, parent, doc.Label)
     if variations is None:
         return False
 

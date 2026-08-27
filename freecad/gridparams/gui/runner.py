@@ -28,7 +28,7 @@ class ExportAbortedError(Exception):
 def run_export(
     doc, config: GridConfig, output_folder: Path, progress_callback=None
 ) -> list[Path]:
-    variations = expand_config(config)
+    variations = expand_config(config, document_label=doc.Label)
     duplicates = find_duplicate_names(variations)
     if duplicates:
         raise DuplicateVariationNamesError(duplicates)
