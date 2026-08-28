@@ -18,7 +18,7 @@ from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
 from freecad.gridparams.core.varset_export import VarSetCsvOptions
 
-from . import export_helpers, persistence, selection, varset_export
+from . import export_helpers, object_tree, persistence, selection, varset_export
 
 _VALUE_PLACEHOLDERS = {
     "Fixed": "e.g. 12",
@@ -75,9 +75,6 @@ def _describe_param_value(value):
     return "Fixed", str(value)
 
 
-_EXPORTABLE_BASE_TYPES = ("PartDesign::Body", "Part::Feature")
-
-
 class VariationsDialog(QtWidgets.QDialog):
     """Read-only table of every expanded variation, with duplicate names highlighted."""
 
@@ -112,30 +109,39 @@ class VariationsDialog(QtWidgets.QDialog):
 
 
 class ObjectPickerDialog(QtWidgets.QDialog):
-    """Pick bodies to add to the export list -- from a filtered list, or by typing any reference."""
+    """Pick objects to add to the export list -- from a hierarchical, filterable tree
+    mirroring FreeCAD's own Model tree, or by typing any reference."""
 
-    def __init__(self, doc, candidates, parent=None):
+    def __init__(self, doc, excluded_names=(), already_selected_names=(), parent=None):
         super().__init__(parent)
         self.doc = doc
+        self._excluded_names = set(excluded_names)
+        self._already_selected_names = set(already_selected_names)
         self.setWindowTitle("Add Objects")
         self._resolved_manual_name = None
+        self.resize(420, 480)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(QtWidgets.QLabel("Solid/body objects in this document:"))
+        layout.addWidget(QtWidgets.QLabel("Objects in this document:"))
 
-        self.list_widget = QtWidgets.QListWidget()
-        self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        for obj in candidates:
-            item = QtWidgets.QListWidgetItem(obj.Label)
-            item.setData(QtCore.Qt.UserRole, obj.Name)
-            self.list_widget.addItem(item)
-        layout.addWidget(self.list_widget)
+        self.only_finished_checkbox = QtWidgets.QCheckBox(
+            "Show only finished parts (hide intermediate features)"
+        )
+        self.only_finished_checkbox.setChecked(True)
+        self.only_finished_checkbox.toggled.connect(self._rebuild_tree)
+        layout.addWidget(self.only_finished_checkbox)
+
+        self.tree_widget = QtWidgets.QTreeWidget()
+        self.tree_widget.setHeaderHidden(True)
+        self.tree_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        layout.addWidget(self.tree_widget)
+        self._rebuild_tree()
 
         manual_row = QtWidgets.QHBoxLayout()
         manual_row.addWidget(QtWidgets.QLabel("Or reference by name/label:"))
         self.manual_edit = QtWidgets.QLineEdit()
         self.manual_edit.setPlaceholderText(
-            "e.g. Compound001 (bypasses the filter above)"
+            "e.g. Compound001 (bypasses the filters above)"
         )
         manual_row.addWidget(self.manual_edit, stretch=1)
         layout.addLayout(manual_row)
@@ -146,6 +152,49 @@ class ObjectPickerDialog(QtWidgets.QDialog):
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _rebuild_tree(self):
+        roots = object_tree.build_object_tree(
+            self.doc.Objects,
+            excluded_names=self._excluded_names,
+            already_selected_names=self._already_selected_names,
+            only_finished=self.only_finished_checkbox.isChecked(),
+        )
+        self.tree_widget.clear()
+        for root in roots:
+            self._add_tree_item(root, None)
+        self.tree_widget.expandAll()
+
+    def _add_tree_item(self, node, parent_item):
+        item = QtWidgets.QTreeWidgetItem(
+            parent_item if parent_item is not None else self.tree_widget
+        )
+        item.setText(0, node.obj.Label)
+        item.setIcon(0, self._icon_for(node.obj))
+        if node.is_candidate:
+            item.setData(0, QtCore.Qt.UserRole, node.obj.Name)
+        elif node.already_selected:
+            item.setData(0, QtCore.Qt.UserRole, None)
+            item.setFlags(
+                item.flags() & ~QtCore.Qt.ItemIsSelectable & ~QtCore.Qt.ItemIsEnabled
+            )
+            item.setToolTip(0, "Already selected")
+        else:
+            item.setData(0, QtCore.Qt.UserRole, None)
+            item.setFlags(item.flags() & ~QtCore.Qt.ItemIsSelectable)
+            font = item.font(0)
+            font.setItalic(True)
+            item.setFont(0, font)
+        for child in node.children:
+            self._add_tree_item(child, item)
+        return item
+
+    def _icon_for(self, obj):
+        view_object = getattr(obj, "ViewObject", None)
+        icon = getattr(view_object, "Icon", None) if view_object is not None else None
+        if icon is not None:
+            return icon
+        return self.style().standardIcon(QtWidgets.QStyle.SP_FileIcon)
 
     def _on_accept(self):
         text = self.manual_edit.text().strip()
@@ -163,7 +212,9 @@ class ObjectPickerDialog(QtWidgets.QDialog):
 
     def selected_names(self):
         names = [
-            item.data(QtCore.Qt.UserRole) for item in self.list_widget.selectedItems()
+            item.data(0, QtCore.Qt.UserRole)
+            for item in self.tree_widget.selectedItems()
+            if item.data(0, QtCore.Qt.UserRole) is not None
         ]
         if self._resolved_manual_name and self._resolved_manual_name not in names:
             names.append(self._resolved_manual_name)
@@ -671,15 +722,15 @@ class GridParamsDialog(QtWidgets.QDialog):
         self._update_body_name_radios_enabled()
 
     def _add_objects(self):
-        existing = set(self._selected_object_names)
-        candidates = [
-            obj
-            for obj in self.doc.Objects
-            if obj.Name not in existing
-            and not persistence.is_config_object(obj)
-            and any(obj.isDerivedFrom(t) for t in _EXPORTABLE_BASE_TYPES)
-        ]
-        picker = ObjectPickerDialog(self.doc, candidates, self)
+        excluded = {
+            obj.Name for obj in self.doc.Objects if persistence.is_config_object(obj)
+        }
+        picker = ObjectPickerDialog(
+            self.doc,
+            excluded_names=excluded,
+            already_selected_names=self._selected_object_names,
+            parent=self,
+        )
         if picker.exec() == QtWidgets.QDialog.Accepted:
             for name in picker.selected_names():
                 if name not in self._selected_object_names:
