@@ -12,7 +12,7 @@ from PySide import QtCore, QtWidgets
 from freecad.gridparams.core.config import expand_config
 from freecad.gridparams.core.variation import find_duplicate_names
 
-from . import preferences, runner
+from . import format_registry, preferences, runner
 
 
 def _report_error(parent, message):
@@ -81,7 +81,7 @@ def _close_progress(progress, disable_widget):
 
 
 def _export_to_resolved_folder(
-    doc, config, output_folder, total, parent, disable_widget
+    doc, config, output_folder, total, parent, disable_widget, format_override=None
 ):
     """Run the export to an already-resolved, already-existing `output_folder`, behind a
     modal progress dialog, reporting the outcome via message boxes."""
@@ -93,7 +93,11 @@ def _export_to_resolved_folder(
 
     try:
         written = runner.run_export(
-            doc, config, output_folder, progress_callback=on_progress
+            doc,
+            config,
+            output_folder,
+            progress_callback=on_progress,
+            format_override=format_override,
         )
     except Exception as exc:
         _close_progress(progress, disable_widget)
@@ -128,14 +132,34 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
     )
 
 
+def _prompt_export_format(parent):
+    """Ask the user to pick a single format for a one-off "Export to..." run, independent of
+    the preferred/per-item/enforced format settings. Returns the chosen format id, or None if
+    the user cancelled."""
+    options = format_registry.list_available_formats()
+    labels = [option.label for option in options]
+    label, ok = QtWidgets.QInputDialog.getItem(
+        parent, "Export to...", "Format:", labels, editable=False
+    )
+    if not ok:
+        return None
+    return next(option.id for option in options if option.label == label)
+
+
 def export_to_folder_with_progress(doc, config, parent, disable_widget=None):
-    """Validate `config`, prompt for a destination folder via a native picker, then run the
-    export there behind a modal progress dialog. Mutates `config.export_settings` in place
+    """Validate `config`, prompt for a single export format and a destination folder via
+    native pickers, then run the export there behind a modal progress dialog. The chosen
+    format is a one-off override for this run only -- it is never persisted, and ignores the
+    preferred/per-item/enforced format settings. Mutates `config.export_settings` in place
     with the chosen folder (as `last_export_folder`) so the picker reopens there next time --
     the caller is responsible for persisting that if it wants it remembered. Returns True on
-    success, False if validation failed, the user cancelled the picker, or the export raised."""
+    success, False if validation failed, the user cancelled a picker, or the export raised."""
     variations = _validate_variations(config, parent, doc.Label)
     if variations is None:
+        return False
+
+    format_id = _prompt_export_format(parent)
+    if format_id is None:
         return False
 
     folder = QtWidgets.QFileDialog.getExistingDirectory(
@@ -146,5 +170,11 @@ def export_to_folder_with_progress(doc, config, parent, disable_widget=None):
     config.export_settings.last_export_folder = folder
 
     return _export_to_resolved_folder(
-        doc, config, Path(folder), len(variations), parent, disable_widget
+        doc,
+        config,
+        Path(folder),
+        len(variations),
+        parent,
+        disable_widget,
+        format_override=format_id,
     )

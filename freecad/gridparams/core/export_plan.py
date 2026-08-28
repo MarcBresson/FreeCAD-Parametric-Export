@@ -18,6 +18,9 @@ class ExportJob:
     variation_name: str
     output_stem: str  # sanitized filename stem, no extension
     objects: list[str]  # object names for this one output file
+    formats: list[str] | None = (
+        None  # None => fall back to the global preferred formats
+    )
 
 
 def build_export_jobs_for_variation(
@@ -41,6 +44,11 @@ def build_export_jobs_for_variation(
                 else f"{stem} - {label}"
             )
         jobs.append(
-            ExportJob(variation_name=variation.name, output_stem=stem, objects=group)
+            ExportJob(
+                variation_name=variation.name,
+                output_stem=stem,
+                objects=group,
+                formats=variation.formats,
+            )
         )
     return jobs

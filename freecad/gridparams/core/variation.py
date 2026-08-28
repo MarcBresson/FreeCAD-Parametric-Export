@@ -7,6 +7,9 @@ from typing import Any
 class Variation:
     name: str
     params: dict[str, Any]
+    formats: list[str] | None = (
+        None  # None => fall back to the global preferred formats
+    )
 
 
 def find_duplicate_names(variations: list[Variation]) -> list[str]:

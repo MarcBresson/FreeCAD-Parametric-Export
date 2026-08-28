@@ -195,6 +195,47 @@ def test_config_from_json_migrates_v1_documents_to_default_csv_export_settings()
     assert config.export_settings.csv_include_private is False
 
 
+def test_item_formats_round_trip_through_json():
+    config = GridConfig(
+        base_name="Base",
+        items=[
+            GridItem(params={"Length": 1}, formats=["step", "stl"]),
+            GridItem(params={"Length": 2}, formats=None),
+        ],
+    )
+    restored = config_from_json(config_to_json(config))
+    assert restored.items[0].formats == ["step", "stl"]
+    assert restored.items[1].formats is None
+
+
+def test_config_from_json_migrates_v2_documents_to_unset_item_formats():
+    """A schema_version-2 document saved before per-item formats existed has no `formats`
+    key on its items; config_from_json should default it to None (inherit) rather than error."""
+    raw = json.dumps(
+        {
+            "schema_version": 2,
+            "base_name": "Base",
+            "varset_object_name": "VarSet",
+            "naming_template": "{base_name}",
+            "items": [{"params": {}, "name_template": None}],
+            "export_settings": {
+                "combine": False,
+                "selected_object_names": [],
+                "last_export_folder": "",
+                "body_name_placement": "append",
+                "csv_include_value": True,
+                "csv_include_unit": True,
+                "csv_include_freecad_unit": True,
+                "csv_include_group": True,
+                "csv_include_comment": True,
+                "csv_include_private": False,
+            },
+        }
+    )
+    config = config_from_json(raw)
+    assert config.items[0].formats is None
+
+
 def test_config_from_json_defaults_missing_optional_csv_fields_on_current_schema():
     """A schema_version-2 document saved before the Group column existed has no
     csv_include_group key; config_from_json should still default it rather than error."""
