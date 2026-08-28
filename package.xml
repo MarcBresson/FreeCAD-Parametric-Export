@@ -15,6 +15,10 @@
     https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/README.md</url>
   <icon>Resources/icons/gridparams.svg</icon>
   <content>
+    <!-- FreeCAD's <other/> content type is not yet wired up to run InitGui.py at all in shipped
+    1.1.x releases (only "workbench" content items trigger it; fixed on FreeCAD's main branch,
+    unreleased as of writing). Since this is a workaround, we declare a dummy workbench here so that
+    InitGui.py is run and can register the toolbar button. -->
     <workbench>
       <classname>GridParamsWorkbench</classname>
       <name>Grid Params Export</name>
