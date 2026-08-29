@@ -16,7 +16,7 @@ from .naming import resolve_name
 from .values import param_values_from_dict, param_values_to_dict
 from .variation import Variation
 
-CONFIG_SCHEMA_VERSION = 2
+CONFIG_SCHEMA_VERSION = 3
 
 
 class ConfigSchemaError(Exception):
@@ -35,8 +35,16 @@ def _migrate_v1_to_v2(data: dict) -> dict:
     return {**data, "schema_version": 2, "export_settings": export_settings}
 
 
+def _migrate_v2_to_v3(data: dict) -> dict:
+    """v3 adds an optional per-item `formats` override; default it to unset (None) for items
+    saved before per-format export existed."""
+    items = [{**item, "formats": item.get("formats")} for item in data.get("items", [])]
+    return {**data, "schema_version": 3, "items": items}
+
+
 _MIGRATIONS: dict[int, Callable[[dict], dict]] = {
     1: _migrate_v1_to_v2,
+    2: _migrate_v2_to_v3,
 }
 """
 Keyed by the version a migration migrates FROM; each function takes the raw dict at that
@@ -78,6 +86,9 @@ def apply_migrations(
 class GridItem:
     params: dict[str, Any] = field(default_factory=dict)
     name_template: str | None = None  # None => fall back to GridConfig.naming_template
+    formats: list[str] | None = (
+        None  # None => fall back to the global preferred formats
+    )
 
 
 @dataclass
@@ -120,6 +131,7 @@ def expand_config(config: GridConfig, document_label: str = "") -> list[Variatio
                         template, config.base_name, resolved_params, document_label
                     ),
                     params=resolved_params,
+                    formats=item.formats,
                 )
             )
     return variations
@@ -138,6 +150,7 @@ def config_to_json(config: GridConfig) -> str:
                     for key, value in item.params.items()
                 },
                 "name_template": item.name_template,
+                "formats": item.formats,
             }
             for item in config.items
         ],
@@ -167,6 +180,7 @@ def config_from_json(raw: str) -> GridConfig:
                 for key, value in item_data.get("params", {}).items()
             },
             name_template=item_data.get("name_template"),
+            formats=item_data.get("formats"),
         )
         for item_data in data.get("items", [])
     ]

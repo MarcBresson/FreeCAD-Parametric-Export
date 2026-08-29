@@ -4,7 +4,7 @@
   <description>Generate and batch-export multiple variations of a parametric model to 3MF. Define a
     parameter grid over an App::VarSet (ParameterGrid-style, similar to scikit-learn), preview the
     resulting variations and their names, then export a chosen set of objects per variation.</description>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
   <date>2026-07-08</date>
   <maintainer email="m.bresson@mailo.eu">Marc Bresson</maintainer>
   <author email="m.bresson@mailo.eu">Marc Bresson</author>
@@ -15,6 +15,10 @@
     https://raw.githubusercontent.com/MarcBresson/FreeCAD-Parametric-Export/main/README.md</url>
   <icon>Resources/icons/gridparams.svg</icon>
   <content>
+    <!-- FreeCAD's <other/> content type is not yet wired up to run InitGui.py at all in shipped
+    1.1.x releases (only "workbench" content items trigger it; fixed on FreeCAD's main branch,
+    unreleased as of writing). Since this is a workaround, we declare a dummy workbench here so that
+    InitGui.py is run and can register the toolbar button. -->
     <workbench>
       <classname>GridParamsWorkbench</classname>
       <name>Grid Params Export</name>

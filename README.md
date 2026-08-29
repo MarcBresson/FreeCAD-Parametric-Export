@@ -71,9 +71,9 @@ Symlink or copy this folder into your FreeCAD user `Mod/` directory, e.g. on mac
 ln -s "$(pwd)" "$HOME/Library/Application Support/FreeCAD/Mod/GridParamsExport"
 ```
 
-Restart FreeCAD; "Grid Params Export" appears in the workbench selector.
-
-![Grid Params Export workbench and toolbar](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/top-bar-workbench.png)
+Restart FreeCAD; "New Grid Export Config..." appears in the Structure toolbar next to
+"Create a variable set", in any workbench that exposes it (Part, PartDesign, Draft, Arch/BIM,
+...).
 
 ## Running the core tests
 

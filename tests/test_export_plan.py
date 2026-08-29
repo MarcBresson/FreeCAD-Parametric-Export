@@ -82,6 +82,20 @@ def test_body_label_is_used_instead_of_internal_name_when_provided():
     assert jobs[1].output_stem == "XS - Right Arm"
 
 
+def test_job_formats_are_carried_from_variation():
+    variation = Variation(name="XS", params={}, formats=["step", "stl"])
+    settings = ExportSettings(combine=True, selected_object_names=["Body001"])
+    jobs = build_export_jobs_for_variation(variation, settings)
+    assert jobs[0].formats == ["step", "stl"]
+
+
+def test_job_formats_default_to_none():
+    variation = Variation(name="XS", params={})
+    settings = ExportSettings(combine=True, selected_object_names=["Body001"])
+    jobs = build_export_jobs_for_variation(variation, settings)
+    assert jobs[0].formats is None
+
+
 def test_body_label_falls_back_to_internal_name_when_missing():
     variation = Variation(name="XS", params={})
     settings = ExportSettings(

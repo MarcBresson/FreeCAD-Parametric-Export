@@ -18,7 +18,15 @@ from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
 from freecad.gridparams.core.varset_export import VarSetCsvOptions
 
-from . import export_helpers, persistence, selection, varset_export
+from . import (
+    export_helpers,
+    format_registry,
+    object_tree,
+    persistence,
+    preferences,
+    selection,
+    varset_export,
+)
 
 _VALUE_PLACEHOLDERS = {
     "Fixed": "e.g. 12",
@@ -75,9 +83,6 @@ def _describe_param_value(value):
     return "Fixed", str(value)
 
 
-_EXPORTABLE_BASE_TYPES = ("PartDesign::Body", "Part::Feature")
-
-
 class VariationsDialog(QtWidgets.QDialog):
     """Read-only table of every expanded variation, with duplicate names highlighted."""
 
@@ -112,30 +117,39 @@ class VariationsDialog(QtWidgets.QDialog):
 
 
 class ObjectPickerDialog(QtWidgets.QDialog):
-    """Pick bodies to add to the export list -- from a filtered list, or by typing any reference."""
+    """Pick objects to add to the export list -- from a hierarchical, filterable tree
+    mirroring FreeCAD's own Model tree, or by typing any reference."""
 
-    def __init__(self, doc, candidates, parent=None):
+    def __init__(self, doc, excluded_names=(), already_selected_names=(), parent=None):
         super().__init__(parent)
         self.doc = doc
+        self._excluded_names = set(excluded_names)
+        self._already_selected_names = set(already_selected_names)
         self.setWindowTitle("Add Objects")
         self._resolved_manual_name = None
+        self.resize(420, 480)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addWidget(QtWidgets.QLabel("Solid/body objects in this document:"))
+        layout.addWidget(QtWidgets.QLabel("Objects in this document:"))
 
-        self.list_widget = QtWidgets.QListWidget()
-        self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        for obj in candidates:
-            item = QtWidgets.QListWidgetItem(obj.Label)
-            item.setData(QtCore.Qt.UserRole, obj.Name)
-            self.list_widget.addItem(item)
-        layout.addWidget(self.list_widget)
+        self.only_finished_checkbox = QtWidgets.QCheckBox(
+            "Show only finished parts (hide intermediate features)"
+        )
+        self.only_finished_checkbox.setChecked(True)
+        self.only_finished_checkbox.toggled.connect(self._rebuild_tree)
+        layout.addWidget(self.only_finished_checkbox)
+
+        self.tree_widget = QtWidgets.QTreeWidget()
+        self.tree_widget.setHeaderHidden(True)
+        self.tree_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        layout.addWidget(self.tree_widget)
+        self._rebuild_tree()
 
         manual_row = QtWidgets.QHBoxLayout()
         manual_row.addWidget(QtWidgets.QLabel("Or reference by name/label:"))
         self.manual_edit = QtWidgets.QLineEdit()
         self.manual_edit.setPlaceholderText(
-            "e.g. Compound001 (bypasses the filter above)"
+            "e.g. Compound001 (bypasses the filters above)"
         )
         manual_row.addWidget(self.manual_edit, stretch=1)
         layout.addLayout(manual_row)
@@ -146,6 +160,49 @@ class ObjectPickerDialog(QtWidgets.QDialog):
         buttons.accepted.connect(self._on_accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _rebuild_tree(self):
+        roots = object_tree.build_object_tree(
+            self.doc.Objects,
+            excluded_names=self._excluded_names,
+            already_selected_names=self._already_selected_names,
+            only_finished=self.only_finished_checkbox.isChecked(),
+        )
+        self.tree_widget.clear()
+        for root in roots:
+            self._add_tree_item(root, None)
+        self.tree_widget.expandAll()
+
+    def _add_tree_item(self, node, parent_item):
+        item = QtWidgets.QTreeWidgetItem(
+            parent_item if parent_item is not None else self.tree_widget
+        )
+        item.setText(0, node.obj.Label)
+        item.setIcon(0, self._icon_for(node.obj))
+        if node.is_candidate:
+            item.setData(0, QtCore.Qt.UserRole, node.obj.Name)
+        elif node.already_selected:
+            item.setData(0, QtCore.Qt.UserRole, None)
+            item.setFlags(
+                item.flags() & ~QtCore.Qt.ItemIsSelectable & ~QtCore.Qt.ItemIsEnabled
+            )
+            item.setToolTip(0, "Already selected")
+        else:
+            item.setData(0, QtCore.Qt.UserRole, None)
+            item.setFlags(item.flags() & ~QtCore.Qt.ItemIsSelectable)
+            font = item.font(0)
+            font.setItalic(True)
+            item.setFont(0, font)
+        for child in node.children:
+            self._add_tree_item(child, item)
+        return item
+
+    def _icon_for(self, obj):
+        view_object = getattr(obj, "ViewObject", None)
+        icon = getattr(view_object, "Icon", None) if view_object is not None else None
+        if icon is not None:
+            return icon
+        return self.style().standardIcon(QtWidgets.QStyle.SP_FileIcon)
 
     def _on_accept(self):
         text = self.manual_edit.text().strip()
@@ -163,11 +220,52 @@ class ObjectPickerDialog(QtWidgets.QDialog):
 
     def selected_names(self):
         names = [
-            item.data(QtCore.Qt.UserRole) for item in self.list_widget.selectedItems()
+            item.data(0, QtCore.Qt.UserRole)
+            for item in self.tree_widget.selectedItems()
+            if item.data(0, QtCore.Qt.UserRole) is not None
         ]
         if self._resolved_manual_name and self._resolved_manual_name not in names:
             names.append(self._resolved_manual_name)
         return names
+
+
+class FormatPickerDialog(QtWidgets.QDialog):
+    """Checkable list of export formats for a single grid item -- OK/Cancel confirms the
+    selection, mirroring VarSetCsvExportDialog's checkbox-then-confirm pattern."""
+
+    def __init__(self, options, selected_ids, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Export Formats")
+        self.resize(320, 420)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(QtWidgets.QLabel("None checked = use the preferred formats"))
+
+        self.list_widget = QtWidgets.QListWidget()
+        selected = set(selected_ids)
+        for option in options:
+            item = QtWidgets.QListWidgetItem(option.label)
+            item.setData(QtCore.Qt.UserRole, option.id)
+            item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
+            item.setCheckState(
+                QtCore.Qt.Checked if option.id in selected else QtCore.Qt.Unchecked
+            )
+            self.list_widget.addItem(item)
+        layout.addWidget(self.list_widget)
+
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def selected_formats(self):
+        return [
+            self.list_widget.item(row).data(QtCore.Qt.UserRole)
+            for row in range(self.list_widget.count())
+            if self.list_widget.item(row).checkState() == QtCore.Qt.Checked
+        ]
 
 
 class GridParamsDialog(QtWidgets.QDialog):
@@ -178,6 +276,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         self._selected_object_names = []
         self._last_export_folder = ""
         self._csv_options = VarSetCsvOptions()
+        self._item_formats: list[str] | None = None
         self.resize(900, 650)
 
         config_obj = self._require_config_object()
@@ -292,6 +391,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         param_buttons.addWidget(add_param_btn)
         param_buttons.addWidget(remove_param_btn)
         detail_panel.addLayout(param_buttons)
+
         items_split.addLayout(detail_panel, stretch=2)
 
         layout.addLayout(items_split)
@@ -307,7 +407,7 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         layout.addWidget(self._make_separator())
 
-        export_group = QtWidgets.QGroupBox("Export")
+        export_group = QtWidgets.QGroupBox()
         export_layout = QtWidgets.QVBoxLayout(export_group)
 
         self.objects_table = QtWidgets.QTableWidget(0, 1)
@@ -357,37 +457,33 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         self.multi_part_combo.setCurrentIndex(1)
 
+        self.body_name_combo = QtWidgets.QComboBox()
+        self.body_name_combo.addItems(
+            ["Append body label to name", "Prepend body label to name"]
+        )
+        self.body_name_combo.setToolTip(
+            "Where to place each part's body label in the exported filename, when "
+            "exporting one file per part."
+        )
+
         multi_part_row.addWidget(multi_part_label)
         multi_part_row.addWidget(multi_part_info_btn)
         multi_part_row.addWidget(self.multi_part_combo)
+        multi_part_row.addSpacing(12)
+        multi_part_row.addWidget(self.body_name_combo)
         multi_part_row.addStretch(1)
         export_layout.addWidget(self.multi_part_row_widget)
 
-        self.body_name_row_widget = QtWidgets.QWidget()
-        body_name_row = QtWidgets.QHBoxLayout(self.body_name_row_widget)
-        body_name_row.setContentsMargins(0, 0, 0, 0)
-        body_name_row.addSpacing(20)
-        self.prepend_body_radio = QtWidgets.QRadioButton(
-            "Prepend body label to exported variation names"
-        )
-        self.append_body_radio = QtWidgets.QRadioButton(
-            "Append body label to exported variation names"
-        )
-        self.append_body_radio.setChecked(True)
-        self.body_name_group = QtWidgets.QButtonGroup(self)
-        self.body_name_group.addButton(self.prepend_body_radio)
-        self.body_name_group.addButton(self.append_body_radio)
-        body_name_row.addWidget(self.prepend_body_radio)
-        body_name_row.addWidget(self.append_body_radio)
-        body_name_row.addStretch(1)
-        export_layout.addWidget(self.body_name_row_widget)
-
         self.multi_part_combo.currentIndexChanged.connect(
-            self._update_body_name_radios_enabled
+            self._update_body_name_combo_visibility
         )
-        self._update_body_name_radios_enabled()
+        self._update_body_name_combo_visibility()
 
         layout.addWidget(export_group)
+
+        self.item_formats_button = QtWidgets.QPushButton()
+        self.item_formats_button.clicked.connect(self._open_format_picker)
+        layout.addWidget(self.item_formats_button)
 
         footer = QtWidgets.QHBoxLayout()
         save_btn = QtWidgets.QPushButton("Save")
@@ -425,6 +521,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             self.items_list.addItem(self._item_label(index, item))
         if self._items:
             self.items_list.setCurrentRow(0)
+        self._update_item_formats_button()
 
         self._selected_object_names = list(config.export_settings.selected_object_names)
         self._last_export_folder = config.export_settings.last_export_folder
@@ -432,11 +529,10 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.multi_part_combo.setCurrentIndex(
             0 if config.export_settings.combine else 1
         )
-        if config.export_settings.body_name_placement == "prepend":
-            self.prepend_body_radio.setChecked(True)
-        else:
-            self.append_body_radio.setChecked(True)
-        self._update_body_name_radios_enabled()
+        self.body_name_combo.setCurrentIndex(
+            1 if config.export_settings.body_name_placement == "prepend" else 0
+        )
+        self._update_body_name_combo_visibility()
 
         self._csv_options = VarSetCsvOptions(
             include_value=config.export_settings.csv_include_value,
@@ -472,6 +568,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         if current is not None:
             row = self.items_list.row(current)
             self._apply_item_to_widgets(self._items[row])
+        self._update_item_formats_button()
         self._refresh_preview()
 
     def _renumber_items(self):
@@ -494,7 +591,9 @@ class GridParamsDialog(QtWidgets.QDialog):
         self._items[row] = self._capture_item_from_widgets()
         original = self._items[row]
         clone = GridItem(
-            params=dict(original.params), name_template=original.name_template
+            params=dict(original.params),
+            name_template=original.name_template,
+            formats=list(original.formats) if original.formats is not None else None,
         )
         self._items.insert(row + 1, clone)
         self.items_list.insertItem(row + 1, self._item_label(row + 1, clone))
@@ -525,6 +624,8 @@ class GridParamsDialog(QtWidgets.QDialog):
             kind, value_text = _describe_param_value(value)
             self._add_param_row(name, kind, value_text)
 
+        self._item_formats = list(item.formats) if item.formats is not None else None
+
     def _capture_item_from_widgets(self):
         name_template = self.item_name_template_edit.text().strip() or None
         params = {}
@@ -541,7 +642,57 @@ class GridParamsDialog(QtWidgets.QDialog):
                 )
             except ValueError:
                 continue
-        return GridItem(params=params, name_template=name_template)
+        return GridItem(
+            params=params, name_template=name_template, formats=self._item_formats
+        )
+
+    # -- Export format picker ------------------------------------------------
+
+    def _open_format_picker(self):
+        options = format_registry.list_available_formats()
+        picker = FormatPickerDialog(options, self._item_formats or [], parent=self)
+        if picker.exec() == QtWidgets.QDialog.Accepted:
+            self._item_formats = picker.selected_formats() or None
+            self._update_item_formats_button()
+            self._refresh_preview()
+
+    def _update_item_formats_button(self):
+        effective = preferences.resolve_effective_formats(self._item_formats)
+        effective_text = ", ".join(effective) if effective else "(none)"
+        allow_per_item = preferences.get_allow_per_item_formats()
+        has_item_override = self._item_formats is not None
+
+        if preferences.get_enforce_preferred_formats():
+            self.item_formats_button.setEnabled(False)
+            self.item_formats_button.setText(f"Formats (enforced): {effective_text}")
+            self.item_formats_button.setToolTip(
+                "Preferred formats are enforced in Preferences; per-item overrides are "
+                "disabled."
+            )
+        elif allow_per_item:
+            self.item_formats_button.setEnabled(True)
+            prefix = "this grid instance" if has_item_override else "preferred"
+            self.item_formats_button.setText(f"Formats ({prefix}): {effective_text}")
+            self.item_formats_button.setToolTip(
+                "Click to override the export formats for this grid instance."
+            )
+        elif has_item_override:
+            # A per-item override is saved on this instance, but AllowPerItemFormats is
+            # off, so resolve_effective_formats() ignores it and preferred formats apply.
+            self.item_formats_button.setEnabled(True)
+            self.item_formats_button.setText(f"Formats (preferred): {effective_text}")
+            self.item_formats_button.setToolTip(
+                "This grid instance has a saved format override, but it is inactive "
+                'because "Allow choosing export formats per grid item" is disabled in '
+                "Preferences. Preferred formats are used instead."
+            )
+        else:
+            self.item_formats_button.setEnabled(False)
+            self.item_formats_button.setText(f"Formats (preferred): {effective_text}")
+            self.item_formats_button.setToolTip(
+                'Enable "Allow choosing export formats per grid item" in Preferences to '
+                "override this per item."
+            )
 
     def _varset_property_names(self):
         varset = self.doc.getObject(self.varset_combo.currentText())
@@ -612,7 +763,7 @@ class GridParamsDialog(QtWidgets.QDialog):
                 selected_object_names=list(self._selected_object_names),
                 last_export_folder=self._last_export_folder,
                 body_name_placement="prepend"
-                if self.prepend_body_radio.isChecked()
+                if self.body_name_combo.currentIndex() == 1
                 else "append",
                 csv_include_value=self._csv_options.include_value,
                 csv_include_unit=self._csv_options.include_unit,
@@ -668,18 +819,18 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _update_multi_part_visibility(self):
         self.multi_part_row_widget.setVisible(len(self._selected_object_names) > 1)
-        self._update_body_name_radios_enabled()
+        self._update_body_name_combo_visibility()
 
     def _add_objects(self):
-        existing = set(self._selected_object_names)
-        candidates = [
-            obj
-            for obj in self.doc.Objects
-            if obj.Name not in existing
-            and not persistence.is_config_object(obj)
-            and any(obj.isDerivedFrom(t) for t in _EXPORTABLE_BASE_TYPES)
-        ]
-        picker = ObjectPickerDialog(self.doc, candidates, self)
+        excluded = {
+            obj.Name for obj in self.doc.Objects if persistence.is_config_object(obj)
+        }
+        picker = ObjectPickerDialog(
+            self.doc,
+            excluded_names=excluded,
+            already_selected_names=self._selected_object_names,
+            parent=self,
+        )
         if picker.exec() == QtWidgets.QDialog.Accepted:
             for name in picker.selected_names():
                 if name not in self._selected_object_names:
@@ -695,14 +846,12 @@ class GridParamsDialog(QtWidgets.QDialog):
             del self._selected_object_names[row]
         self._refresh_objects_table()
 
-    def _update_body_name_radios_enabled(self):
+    def _update_body_name_combo_visibility(self):
         show = (
             len(self._selected_object_names) > 1
             and self.multi_part_combo.currentIndex() == 1
         )
-        self.body_name_row_widget.setVisible(show)
-        self.prepend_body_radio.setEnabled(show)
-        self.append_body_radio.setEnabled(show)
+        self.body_name_combo.setVisible(show)
 
     def _on_export_varset_csv(self):
         varset = self.doc.getObject(self.varset_combo.currentText())
@@ -743,22 +892,8 @@ class GridParamsDialog(QtWidgets.QDialog):
         _open_dialogs.pop((self.doc.Name, self.config_object_name), None)
         super().closeEvent(event)
 
-    def _multi_part_choice_is_valid(self):
-        if self.multi_part_combo.currentIndex() == 1 and not (
-            self.prepend_body_radio.isChecked() or self.append_body_radio.isChecked()
-        ):
-            QtWidgets.QMessageBox.critical(
-                self,
-                "GridParams",
-                "Choose whether to prepend or append the body label when exporting one file per object.",
-            )
-            return False
-        return True
-
     def _on_run_export(self):
         config = self._build_config_from_widgets()
-        if not self._multi_part_choice_is_valid():
-            return
 
         persistence.save_config(self._require_config_object(), config)
         export_helpers.run_export_with_progress(
@@ -767,8 +902,6 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _on_export_to_folder(self):
         config = self._build_config_from_widgets()
-        if not self._multi_part_choice_is_valid():
-            return
 
         export_helpers.export_to_folder_with_progress(
             self.doc, config, parent=self, disable_widget=self

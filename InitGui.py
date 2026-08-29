@@ -1,5 +1,8 @@
 import FreeCADGui as Gui
 
-from freecad.gridparams.gui.init_gui import GridParamsWorkbench
+from freecad.gridparams.gui import commands, preferences_page
+from freecad.gridparams.gui.manipulator import GridParamsManipulator
 
-Gui.addWorkbench(GridParamsWorkbench())
+commands.register()
+Gui.addWorkbenchManipulator(GridParamsManipulator())
+Gui.addPreferencePage(preferences_page.GridParamsPreferencesPage, "Grid Params Export")

@@ -6,7 +6,8 @@ from freecad.gridparams.core.config import GridConfig, expand_config
 from freecad.gridparams.core.export_plan import build_export_jobs_for_variation
 from freecad.gridparams.core.variation import find_duplicate_names
 
-from .mesh_export import export_objects
+from . import preferences
+from .format_registry import export_objects
 from .selection import resolve_objects
 from .varset_apply import apply_variation, capture_params, restore_params
 
@@ -25,8 +26,38 @@ class ExportAbortedError(Exception):
         self.written = written
 
 
+def _export_variation(
+    doc,
+    config: GridConfig,
+    variation,
+    output_folder: Path,
+    format_override: str | None,
+    object_labels: dict,
+) -> list[Path]:
+    """Apply one variation and export every job it produces. Returns the paths written."""
+    written = []
+    apply_variation(doc, config.varset_object_name, variation)
+    for job in build_export_jobs_for_variation(
+        variation, config.export_settings, object_labels
+    ):
+        objects = resolve_objects(doc, job.objects)
+        path = output_folder / job.output_stem
+        formats = (
+            [format_override]
+            if format_override
+            else preferences.resolve_effective_formats(job.formats)
+        )
+        for format_id in formats:
+            written.append(export_objects(objects, path, format_id))
+    return written
+
+
 def run_export(
-    doc, config: GridConfig, output_folder: Path, progress_callback=None
+    doc,
+    config: GridConfig,
+    output_folder: Path,
+    progress_callback=None,
+    format_override: str | None = None,
 ) -> list[Path]:
     variations = expand_config(config, document_label=doc.Label)
     duplicates = find_duplicate_names(variations)
@@ -47,14 +78,16 @@ def run_export(
     try:
         for index, variation in enumerate(variations, start=1):
             try:
-                apply_variation(doc, config.varset_object_name, variation)
-                for job in build_export_jobs_for_variation(
-                    variation, config.export_settings, object_labels
-                ):
-                    objects = resolve_objects(doc, job.objects)
-                    path = output_folder / job.output_stem
-                    export_objects(objects, path)
-                    written.append(path.with_name(path.name + ".3mf"))
+                written.extend(
+                    _export_variation(
+                        doc,
+                        config,
+                        variation,
+                        output_folder,
+                        format_override,
+                        object_labels,
+                    )
+                )
             except Exception as exc:
                 raise ExportAbortedError(
                     f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",

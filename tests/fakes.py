@@ -8,13 +8,16 @@ class FakeViewObject:
 
 
 class FakeObject:
-    def __init__(self, doc, name, type_id="App::FeaturePython"):
+    def __init__(self, doc, name, type_id="App::FeaturePython", also_derived_from=()):
         self.Document = doc
         self.Name = name
         self.Label = name
         self.TypeId = type_id
         self.Proxy = None
         self.ViewObject = FakeViewObject()
+        self._also_derived_from = set(also_derived_from)
+        self.Group = []
+        self.InList = []
 
     def addProperty(
         self,
@@ -32,7 +35,23 @@ class FakeObject:
         return self
 
     def isDerivedFrom(self, type_name):
-        return self.TypeId == type_name
+        return type_name == self.TypeId or type_name in self._also_derived_from
+
+
+def group(parent, *children):
+    """Set parent.Group = children, mirroring FreeCAD's auto-maintained InList
+    back-references (a Group-typed link makes each child's InList include parent)."""
+    parent.Group = list(children)
+    for child in children:
+        child.InList = list(child.InList) + [parent]
+    return parent
+
+
+def consume(consumer, *inputs):
+    """Mimic e.g. a boolean's Base/Tool linking to inputs, without Group nesting."""
+    for obj in inputs:
+        obj.InList = list(obj.InList) + [consumer]
+    return consumer
 
 
 class FakeDocument:
