@@ -26,6 +26,32 @@ class ExportAbortedError(Exception):
         self.written = written
 
 
+def _export_variation(
+    doc,
+    config: GridConfig,
+    variation,
+    output_folder: Path,
+    format_override: str | None,
+    object_labels: dict,
+) -> list[Path]:
+    """Apply one variation and export every job it produces. Returns the paths written."""
+    written = []
+    apply_variation(doc, config.varset_object_name, variation)
+    for job in build_export_jobs_for_variation(
+        variation, config.export_settings, object_labels
+    ):
+        objects = resolve_objects(doc, job.objects)
+        path = output_folder / job.output_stem
+        formats = (
+            [format_override]
+            if format_override
+            else preferences.resolve_effective_formats(job.formats)
+        )
+        for format_id in formats:
+            written.append(export_objects(objects, path, format_id))
+    return written
+
+
 def run_export(
     doc,
     config: GridConfig,
@@ -52,19 +78,16 @@ def run_export(
     try:
         for index, variation in enumerate(variations, start=1):
             try:
-                apply_variation(doc, config.varset_object_name, variation)
-                for job in build_export_jobs_for_variation(
-                    variation, config.export_settings, object_labels
-                ):
-                    objects = resolve_objects(doc, job.objects)
-                    path = output_folder / job.output_stem
-                    formats = (
-                        [format_override]
-                        if format_override
-                        else preferences.resolve_effective_formats(job.formats)
+                written.extend(
+                    _export_variation(
+                        doc,
+                        config,
+                        variation,
+                        output_folder,
+                        format_override,
+                        object_labels,
                     )
-                    for format_id in formats:
-                        written.append(export_objects(objects, path, format_id))
+                )
             except Exception as exc:
                 raise ExportAbortedError(
                     f"Stopped at variation {index}/{total} ({variation.name!r}): {exc}",

@@ -6,7 +6,7 @@ so it can be unit-tested with plain fakes.
 """
 
 from dataclasses import dataclass, field
-from typing import Collection
+from collections.abc import Collection
 
 _EXPORTABLE_BASE_TYPES = ("PartDesign::Body", "Part::Feature")
 
@@ -99,7 +99,7 @@ def build_object_tree(
         "only_finished": only_finished,
     }
 
-    nodes = {}
+    nodes: dict[str, TreeNode] = {}
     for obj in doc_objects:
         _get_or_create_node(obj, nodes, parent_of, classify_kwargs)
 

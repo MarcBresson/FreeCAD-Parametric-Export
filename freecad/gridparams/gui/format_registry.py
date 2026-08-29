@@ -21,6 +21,22 @@ class FormatOption:
     module_name: str
 
 
+def _resolve_format_option(
+    extension: str, module_name, seen_ids: set[str]
+) -> "FormatOption | None":
+    """Build the FormatOption for one FreeCAD.getExportType() entry, or None if it's
+    unusable (no module) or a duplicate of an already-seen extension (first wins)."""
+    if isinstance(module_name, (list, tuple)):
+        module_name = module_name[0] if module_name else None
+    if not module_name:
+        return None
+    format_id = extension.lower()
+    if format_id in seen_ids:
+        return None
+    seen_ids.add(format_id)
+    return FormatOption(id=format_id, label=f"*.{format_id}", module_name=module_name)
+
+
 def list_available_formats() -> list[FormatOption]:
     """Every export format any loaded FreeCAD module has registered, keyed by its extension.
     Cached for the process lifetime -- registrations don't change after startup."""
@@ -31,20 +47,9 @@ def list_available_formats() -> list[FormatOption]:
         seen_ids: set[str] = set()
         options = []
         for extension, module_name in FreeCAD.getExportType().items():
-            # A handful of formats are registered by more than one module; first wins.
-            if isinstance(module_name, (list, tuple)):
-                module_name = module_name[0] if module_name else None
-            if not module_name:
-                continue
-            format_id = extension.lower()
-            if format_id in seen_ids:
-                continue
-            seen_ids.add(format_id)
-            options.append(
-                FormatOption(
-                    id=format_id, label=f"*.{format_id}", module_name=module_name
-                )
-            )
+            option = _resolve_format_option(extension, module_name, seen_ids)
+            if option is not None:
+                options.append(option)
         _cache = sorted(options, key=lambda option: option.label)
     return _cache
 
