@@ -6,6 +6,7 @@ so it can be unit-tested with plain fakes.
 """
 
 from dataclasses import dataclass, field
+from typing import Collection
 
 _EXPORTABLE_BASE_TYPES = ("PartDesign::Body", "Part::Feature")
 
@@ -77,9 +78,9 @@ def _prune_empty_branches(node):
 
 def build_object_tree(
     doc_objects,
-    excluded_names=frozenset(),
-    already_selected_names=frozenset(),
-    only_finished=False,
+    excluded_names: Collection[str] = frozenset(),
+    already_selected_names: Collection[str] = frozenset(),
+    only_finished: bool = False,
 ):
     """Build the root TreeNodes for a filtered view mirroring the document's own
     Group-based nesting (PartDesign::Body -> its features, App::Part -> its children).
