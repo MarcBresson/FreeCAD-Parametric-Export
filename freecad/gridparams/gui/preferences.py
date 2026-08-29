@@ -55,9 +55,15 @@ def set_enforce_preferred_formats(enforced: bool) -> None:
 
 
 def resolve_effective_formats(item_formats: list[str] | None) -> list[str]:
-    """The formats a given grid item should actually export to, given the global preferences:
-    enforced preferred formats always win; otherwise a per-item override is used if the global
-    toggle allows it; otherwise the preferred formats apply."""
+    """The formats a given grid item should actually export to. Precedence, highest first:
+
+    1. Preferred formats, if EnforcePreferredFormats is on -- this always wins, even over
+       an `item_formats` override.
+    2. `item_formats`, but only if AllowPerItemFormats is also on. If that toggle is off,
+       `item_formats` is ignored here even when set -- callers must not assume a non-None
+       `item_formats` is reflected in the result.
+    3. Preferred formats (or the built-in fallback, if none are configured).
+    """
     preferred = get_preferred_formats() or _FALLBACK_FORMATS
     if get_enforce_preferred_formats():
         return preferred

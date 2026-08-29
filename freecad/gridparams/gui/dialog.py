@@ -659,6 +659,8 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _update_item_formats_button(self):
         effective = preferences.resolve_effective_formats(self._item_formats)
         effective_text = ", ".join(effective) if effective else "(none)"
+        allow_per_item = preferences.get_allow_per_item_formats()
+        has_item_override = self._item_formats is not None
 
         if preferences.get_enforce_preferred_formats():
             self.item_formats_button.setEnabled(False)
@@ -667,14 +669,22 @@ class GridParamsDialog(QtWidgets.QDialog):
                 "Preferred formats are enforced in Preferences; per-item overrides are "
                 "disabled."
             )
-        elif preferences.get_allow_per_item_formats() or self._item_formats is not None:
+        elif allow_per_item:
             self.item_formats_button.setEnabled(True)
-            prefix = (
-                "this grid instance" if self._item_formats is not None else "preferred"
-            )
+            prefix = "this grid instance" if has_item_override else "preferred"
             self.item_formats_button.setText(f"Formats ({prefix}): {effective_text}")
             self.item_formats_button.setToolTip(
                 "Click to override the export formats for this grid instance."
+            )
+        elif has_item_override:
+            # A per-item override is saved on this instance, but AllowPerItemFormats is
+            # off, so resolve_effective_formats() ignores it and preferred formats apply.
+            self.item_formats_button.setEnabled(True)
+            self.item_formats_button.setText(f"Formats (preferred): {effective_text}")
+            self.item_formats_button.setToolTip(
+                "This grid instance has a saved format override, but it is inactive "
+                'because "Allow choosing export formats per grid item" is disabled in '
+                "Preferences. Preferred formats are used instead."
             )
         else:
             self.item_formats_button.setEnabled(False)
