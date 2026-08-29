@@ -137,13 +137,17 @@ def _prompt_export_format(parent):
     the preferred/per-item/enforced format settings. Returns the chosen format id, or None if
     the user cancelled."""
     options = format_registry.list_available_formats()
+    if not options:
+        _report_error(parent, "No export formats are available.")
+        return None
+
     labels = [option.label for option in options]
     label, ok = QtWidgets.QInputDialog.getItem(
         parent, "Export to...", "Format:", labels, editable=False
     )
     if not ok:
         return None
-    return next(option.id for option in options if option.label == label)
+    return next((option.id for option in options if option.label == label), None)
 
 
 def export_to_folder_with_progress(doc, config, parent, disable_widget=None):
