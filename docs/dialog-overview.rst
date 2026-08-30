@@ -7,9 +7,11 @@ that when the dialog looks different from one moment to the next, you know why. 
 task-oriented instructions ("how do I get this filename pattern"), see the :doc:`guides
 <guides/parameter-grids>` instead; this page sticks to describing the UI itself.
 
-.. todo::
+.. figure:: _static/main-dialog.png
+   :alt: the full dialog
+   :align: center
 
-   Screenshot: the full dialog
+   The full dialog, with all panels and controls visible.
 
 Header row
 ----------
@@ -93,10 +95,17 @@ One control below the table is **conditionally visible**:
   **completely hidden** if 1 object is selected, and appears only once 2 or more
   objects are in the list.
 
-  .. todo::
+.. figure:: _static/singlebody-export.png
+    :alt: the objects panel with 1 object selected
+    :align: center
 
-     Screenshot pair: the objects panel with 1 objects selected, and with 2+
-     objects selected, a before/after comparison
+    The objects panel with 1 object selected. The combine/split row is hidden.
+
+.. figure:: _static/multibody-export.png
+    :alt: the objects panel with 2+ objects selected
+    :align: center
+
+    The objects panel with 2+ objects selected. The combine/split row is visible.
 
 Where the body label lands in the filename (when splitting into one file per part) is a global
 preference, not a per-config control here -- see :ref:`per-part-filename-template` in

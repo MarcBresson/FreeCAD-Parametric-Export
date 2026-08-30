@@ -8,9 +8,11 @@ document, and exports a chosen set of objects to one or more files. Export forma
 whatever FreeCAD itself can produce (STEP, STL, IGES, OBJ, 3MF, and anything else a loaded
 workbench registers); nothing is hardcoded to a single format.
 
-.. todo::
+.. figure:: _static/main-dialog.png
+   :alt: the full dialog
+   :align: center
 
-   Hero screenshot: the main Grid Params Export dialog
+   The full dialog, with all panels and controls visible.
 
 Why Grid Params Export?
 ------------------------
