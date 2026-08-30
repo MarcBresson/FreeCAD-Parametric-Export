@@ -669,14 +669,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         has_item_override = self._item_formats is not None
         self.item_formats_clear_btn.setVisible(has_item_override)
 
-        if preferences.get_enforce_preferred_formats():
-            self.item_formats_button.setEnabled(False)
-            self.item_formats_button.setText(f"Formats (enforced): {effective_text}")
-            self.item_formats_button.setToolTip(
-                "Preferred formats are enforced in Preferences; per-item overrides are "
-                "disabled."
-            )
-        elif allow_per_item:
+        if allow_per_item:
             self.item_formats_button.setEnabled(True)
             prefix = "this grid instance" if has_item_override else "preferred"
             self.item_formats_button.setText(f"Formats ({prefix}): {effective_text}")

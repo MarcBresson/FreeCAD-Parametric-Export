@@ -54,15 +54,6 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         )
         layout.addRow(self.allow_per_item_checkbox)
 
-        self.enforce_preferred_checkbox = QtWidgets.QCheckBox(
-            "Enforce preferred formats for every export"
-        )
-        self.enforce_preferred_checkbox.setToolTip(
-            "When checked, the preferred formats above are always used, ignoring any "
-            "per-item override."
-        )
-        layout.addRow(self.enforce_preferred_checkbox)
-
         self.per_part_filename_template_edit = QtWidgets.QLineEdit()
         per_part_filename_template_tooltip = (
             "How each part's output filename is built when exporting one file per part.\n"
@@ -97,9 +88,6 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         self.allow_per_item_checkbox.setChecked(
             preferences.get_allow_per_item_formats()
         )
-        self.enforce_preferred_checkbox.setChecked(
-            preferences.get_enforce_preferred_formats()
-        )
 
         self.per_part_filename_template_edit.setText(
             preferences.get_body_name_template()
@@ -115,9 +103,6 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         ]
         preferences.set_preferred_formats(formats)
         preferences.set_allow_per_item_formats(self.allow_per_item_checkbox.isChecked())
-        preferences.set_enforce_preferred_formats(
-            self.enforce_preferred_checkbox.isChecked()
-        )
 
         preferences.set_body_name_template(
             self.per_part_filename_template_edit.text()

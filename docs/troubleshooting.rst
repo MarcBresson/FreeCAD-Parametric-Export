@@ -14,9 +14,8 @@ FreeCAD.
 My per-item format choice doesn't seem to take effect
 -----------------------------------------------------------
 
-Check the two global preferences in **Edit ▸ Preferences ▸ Grid Params Export**: "Enforce
-preferred formats" always overrides a per-item choice, and "Allow choosing export formats per
-grid item" must be on for a per-item override to apply at all. See the
+Check the global preference in **Edit ▸ Preferences ▸ Grid Params Export**: "Allow choosing
+export formats per grid item" must be on for a per-item override to apply at all. See the
 :ref:`full precedence table <format-precedence-table>` in :doc:`guides/preferences`.
 
 .. _duplicate-names-troubleshooting:

@@ -83,7 +83,7 @@ itself is a global preference, not a per-config setting -- see below.
 Preferences quick reference
 -------------------------------
 
-All five settings live under the FreeCAD parameter group
+All four settings live under the FreeCAD parameter group
 ``User parameter:BaseApp/Preferences/Mod/GridParams``.
 
 .. list-table::
@@ -102,9 +102,6 @@ All five settings live under the FreeCAD parameter group
    * - Allow choosing export formats per grid item
      - Off
      - Whether a saved per-item override is actually used.
-   * - Enforce preferred formats for every export
-     - Off
-     - When on, always wins over any per-item override.
    * - Per-part filename template
      - ``{name} - {body_label}``
      - How each part's filename is built when exporting one file per part. Placeholders:

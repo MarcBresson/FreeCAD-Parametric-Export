@@ -108,11 +108,10 @@ these settings actually do to your output filenames.
 Formats button
 --------------
 
-Always visible, never hidden, but its text and whether it's clickable depend on two global
-preferences crossed with whether this specific grid item has a saved format override. You'll
+Always visible, never hidden, but its text and whether it's clickable depend on a global
+preference crossed with whether this specific grid item has a saved format override. You'll
 see one of these on-screen states:
 
-- ``Formats (enforced): ...``, disabled; the global "enforce" preference always wins.
 - ``Formats (preferred): ...``, enabled or disabled depending on context.
 - ``Formats (this grid instance): ...``, enabled; this item has its own override in effect.
 

@@ -18,7 +18,6 @@ PARAM_GROUP = "User parameter:BaseApp/Preferences/Mod/GridParams"
 EXPORT_RELATIVE_PATH_KEY = "ExportRelativePath"
 PREFERRED_FORMATS_KEY = "PreferredFormats"
 ALLOW_PER_ITEM_FORMATS_KEY = "AllowPerItemFormats"
-ENFORCE_PREFERRED_FORMATS_KEY = "EnforcePreferredFormats"
 BODY_NAME_TEMPLATE_KEY = "BodyNameTemplate"
 
 _FALLBACK_FORMATS = ["3mf"]
@@ -49,14 +48,6 @@ def set_allow_per_item_formats(allowed: bool) -> None:
     App.ParamGet(PARAM_GROUP).SetBool(ALLOW_PER_ITEM_FORMATS_KEY, allowed)
 
 
-def get_enforce_preferred_formats() -> bool:
-    return App.ParamGet(PARAM_GROUP).GetBool(ENFORCE_PREFERRED_FORMATS_KEY, False)
-
-
-def set_enforce_preferred_formats(enforced: bool) -> None:
-    App.ParamGet(PARAM_GROUP).SetBool(ENFORCE_PREFERRED_FORMATS_KEY, enforced)
-
-
 def get_body_name_template() -> str:
     return App.ParamGet(PARAM_GROUP).GetString(
         BODY_NAME_TEMPLATE_KEY, DEFAULT_BODY_NAME_TEMPLATE
@@ -68,18 +59,13 @@ def set_body_name_template(template: str) -> None:
 
 
 def resolve_effective_formats(item_formats: list[str] | None) -> list[str]:
-    """The formats a given grid item should actually export to. Precedence, highest first:
+    """The formats a given grid item should actually export to.
 
-    1. Preferred formats, if EnforcePreferredFormats is on -- this always wins, even over
-       an `item_formats` override.
-    2. `item_formats`, but only if AllowPerItemFormats is also on. If that toggle is off,
-       `item_formats` is ignored here even when set -- callers must not assume a non-None
-       `item_formats` is reflected in the result.
-    3. Preferred formats (or the built-in fallback, if none are configured).
+    Uses `item_formats` if AllowPerItemFormats is on and an override is set -- otherwise
+    callers must not assume a non-None `item_formats` is reflected in the result. Falls back
+    to the preferred formats (or the built-in fallback, if none are configured).
     """
     preferred = get_preferred_formats() or _FALLBACK_FORMATS
-    if get_enforce_preferred_formats():
-        return preferred
     if get_allow_per_item_formats() and item_formats is not None:
         return item_formats
     return preferred

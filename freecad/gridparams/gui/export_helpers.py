@@ -134,7 +134,7 @@ def run_export_with_progress(doc, config, parent, disable_widget=None):
 
 def _prompt_export_format(parent):
     """Ask the user to pick a single format for a one-off "Export to..." run, independent of
-    the preferred/per-item/enforced format settings. Returns the chosen format id, or None if
+    the preferred/per-item format settings. Returns the chosen format id, or None if
     the user cancelled."""
     options = format_registry.list_available_formats()
     if not options:
@@ -154,7 +154,7 @@ def export_to_folder_with_progress(doc, config, parent, disable_widget=None):
     """Validate `config`, prompt for a single export format and a destination folder via
     native pickers, then run the export there behind a modal progress dialog. The chosen
     format is a one-off override for this run only -- it is never persisted, and ignores the
-    preferred/per-item/enforced format settings. Mutates `config.export_settings` in place
+    preferred/per-item format settings. Mutates `config.export_settings` in place
     with the chosen folder (as `last_export_folder`) so the picker reopens there next time --
     the caller is responsible for persisting that if it wants it remembered. Returns True on
     success, False if validation failed, the user cancelled a picker, or the export raised."""
