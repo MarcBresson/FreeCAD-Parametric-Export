@@ -474,9 +474,21 @@ class GridParamsDialog(QtWidgets.QDialog):
 
         layout.addWidget(export_group)
 
+        item_formats_row = QtWidgets.QHBoxLayout()
         self.item_formats_button = QtWidgets.QPushButton()
         self.item_formats_button.clicked.connect(self._open_format_picker)
-        layout.addWidget(self.item_formats_button)
+        self.item_formats_clear_btn = QtWidgets.QToolButton()
+        self.item_formats_clear_btn.setText("✖")
+        self.item_formats_clear_btn.setStyleSheet("color: red; font-weight: bold;")
+        self.item_formats_clear_btn.setAutoRaise(True)
+        self.item_formats_clear_btn.setToolTip(
+            "Remove the per-instance export format override."
+        )
+        self.item_formats_clear_btn.clicked.connect(self._clear_item_formats)
+        self.item_formats_clear_btn.setVisible(False)
+        item_formats_row.addWidget(self.item_formats_button, 1)
+        item_formats_row.addWidget(self.item_formats_clear_btn)
+        layout.addLayout(item_formats_row)
 
         footer = QtWidgets.QHBoxLayout()
         save_btn = QtWidgets.QPushButton("Save")
@@ -645,11 +657,17 @@ class GridParamsDialog(QtWidgets.QDialog):
             self._update_item_formats_button()
             self._refresh_preview()
 
+    def _clear_item_formats(self):
+        self._item_formats = None
+        self._update_item_formats_button()
+        self._refresh_preview()
+
     def _update_item_formats_button(self):
         effective = preferences.resolve_effective_formats(self._item_formats)
         effective_text = ", ".join(effective) if effective else "(none)"
         allow_per_item = preferences.get_allow_per_item_formats()
         has_item_override = self._item_formats is not None
+        self.item_formats_clear_btn.setVisible(has_item_override)
 
         if preferences.get_enforce_preferred_formats():
             self.item_formats_button.setEnabled(False)

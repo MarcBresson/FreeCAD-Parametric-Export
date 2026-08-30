@@ -42,6 +42,11 @@ preferences. The :ref:`full precedence table <format-precedence-table>` in :doc:
 has worked examples; this page assumes you're using whatever your preferences already resolve
 to.
 
+Once you've saved a per-item override on a grid item, a small red **✖** button appears next to
+the Formats button. Click it to remove that item's override in one step, instead of reopening
+the format picker and deselecting everything -- the item then falls back to the preferred
+formats.
+
 Running the export
 ---------------------
 

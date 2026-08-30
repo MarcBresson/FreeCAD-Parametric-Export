@@ -120,6 +120,12 @@ the :ref:`full precedence table <format-precedence-table>` in :doc:`guides/prefe
 explains each state exactly; this page just tells you the button won't always say (or do) the
 same thing.
 
+A small red **✖** button appears immediately to the right of the Formats button whenever this
+grid item has a saved per-item override (i.e. whenever the button reads
+``Formats (this grid instance): ...`` or the override is inactive but still saved, see
+:ref:`the precedence table <format-precedence-table>`). Click it to drop the item's override and
+fall back to the preferred formats; it disappears again once there's nothing left to remove.
+
 Footer
 ------
 
