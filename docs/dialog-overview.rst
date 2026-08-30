@@ -38,20 +38,22 @@ Item detail panel (right)
 Always visible, and reflects whichever item is currently selected on the left:
 
 - **Item naming template**: blank means "inherit the default template above."
-- **Parameters table**, three columns:
+- **Parameters table**, four columns:
 
   - **Parameter**: an *editable* combo box pre-filled with the selected VarSet's own
     property names, but it accepts any text you type.
-
-    .. warning::
-
-       Nothing validates that a typed parameter name matches a real property on the VarSet;
-       double-check spelling against the VarSet's property list.
-
   - **Kind**: ``Fixed`` / ``List`` / ``LinSpace`` / ``Range``.
   - **Value**: free text. Its *placeholder* changes with the selected Kind, to remind you of
     the expected format: ``Fixed`` → "e.g. 12", ``List`` → "e.g. 1000, 1500, 2000",
     ``LinSpace`` → "start, stop, num", ``Range`` → "start, stop, step".
+  - A narrow, unlabeled column that shows a warning icon whenever the Parameter cell's
+    text doesn't match one of the selected VarSet's properties; hover it for a tooltip
+    naming the offending parameter and VarSet.
+
+    .. note::
+
+       This only checks that the name exists on the VarSet -- it does not catch every
+       possible export-time failure.
 
   **Add Parameter** / **Remove Parameter** sit below the table.
 

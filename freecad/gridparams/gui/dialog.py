@@ -386,9 +386,14 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         detail_panel.addWidget(self.item_name_template_edit)
 
-        self.params_table = QtWidgets.QTableWidget(0, 3)
-        self.params_table.setHorizontalHeaderLabels(["Parameter", "Kind", "Value"])
-        self.params_table.horizontalHeader().setStretchLastSection(True)
+        self.params_table = QtWidgets.QTableWidget(0, 4)
+        self.params_table.setHorizontalHeaderLabels(["Parameter", "Kind", "Value", ""])
+        self.params_table.horizontalHeader().setSectionResizeMode(
+            2, QtWidgets.QHeaderView.Stretch
+        )
+        self.params_table.horizontalHeader().setSectionResizeMode(
+            3, QtWidgets.QHeaderView.ResizeToContents
+        )
         detail_panel.addWidget(self.params_table)
 
         param_buttons = QtWidgets.QHBoxLayout()
@@ -711,6 +716,28 @@ class GridParamsDialog(QtWidgets.QDialog):
             combo.setCurrentText(current)
             combo.blockSignals(False)
 
+    def _refresh_param_warnings(self):
+        varset = self.doc.getObject(self.varset_combo.currentText())
+        valid_names = set(varset.PropertiesList) if varset is not None else None
+        warning_icon = self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning)
+        for row in range(self.params_table.rowCount()):
+            name_combo = self.params_table.cellWidget(row, 0)
+            name = name_combo.currentText().strip() if name_combo else ""
+            item = self.params_table.item(row, 3)
+            if item is None:
+                item = QtWidgets.QTableWidgetItem()
+                item.setFlags(QtCore.Qt.ItemIsEnabled)
+                self.params_table.setItem(row, 3, item)
+            if valid_names is not None and name and name not in valid_names:
+                item.setIcon(warning_icon)
+                item.setToolTip(
+                    f"'{name}' is not a property of VarSet "
+                    f"'{self.varset_combo.currentText()}'."
+                )
+            else:
+                item.setIcon(QtGui.QIcon())
+                item.setToolTip("")
+
     def _add_param_row(self, name="", kind="Fixed", value_text=""):
         row = self.params_table.rowCount()
         self.params_table.insertRow(row)
@@ -772,6 +799,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
 
     def _refresh_preview(self):
+        self._refresh_param_warnings()
         try:
             config = self._build_config_from_widgets()
             variations = expand_config(config, document_label=self.doc.Label)
