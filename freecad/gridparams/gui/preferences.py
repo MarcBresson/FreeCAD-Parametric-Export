@@ -12,11 +12,14 @@ installation. The Qt preferences page itself lives in `preferences_page.py`.
 
 import FreeCAD as App
 
+from ..core.export_plan import DEFAULT_BODY_NAME_TEMPLATE
+
 PARAM_GROUP = "User parameter:BaseApp/Preferences/Mod/GridParams"
 EXPORT_RELATIVE_PATH_KEY = "ExportRelativePath"
 PREFERRED_FORMATS_KEY = "PreferredFormats"
 ALLOW_PER_ITEM_FORMATS_KEY = "AllowPerItemFormats"
 ENFORCE_PREFERRED_FORMATS_KEY = "EnforcePreferredFormats"
+BODY_NAME_TEMPLATE_KEY = "BodyNameTemplate"
 
 _FALLBACK_FORMATS = ["3mf"]
 
@@ -52,6 +55,16 @@ def get_enforce_preferred_formats() -> bool:
 
 def set_enforce_preferred_formats(enforced: bool) -> None:
     App.ParamGet(PARAM_GROUP).SetBool(ENFORCE_PREFERRED_FORMATS_KEY, enforced)
+
+
+def get_body_name_template() -> str:
+    return App.ParamGet(PARAM_GROUP).GetString(
+        BODY_NAME_TEMPLATE_KEY, DEFAULT_BODY_NAME_TEMPLATE
+    )
+
+
+def set_body_name_template(template: str) -> None:
+    App.ParamGet(PARAM_GROUP).SetString(BODY_NAME_TEMPLATE_KEY, template)
 
 
 def resolve_effective_formats(item_formats: list[str] | None) -> list[str]:

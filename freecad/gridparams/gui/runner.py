@@ -38,7 +38,10 @@ def _export_variation(
     written = []
     apply_variation(doc, config.varset_object_name, variation)
     for job in build_export_jobs_for_variation(
-        variation, config.export_settings, object_labels
+        variation,
+        config.export_settings,
+        object_labels,
+        body_name_template=preferences.get_body_name_template(),
     ):
         objects = resolve_objects(doc, job.objects)
         path = output_folder / job.output_stem

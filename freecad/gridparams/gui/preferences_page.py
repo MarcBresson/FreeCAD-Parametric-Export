@@ -63,6 +63,28 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         )
         layout.addRow(self.enforce_preferred_checkbox)
 
+        self.per_part_filename_template_edit = QtWidgets.QLineEdit()
+        per_part_filename_template_tooltip = (
+            "How each part's output filename is built when exporting one file per part.\n"
+            "Placeholders: {name} (the variation name), {body_label} (the part's Label), and "
+            "{body_name} (the part's internal Name).\n"
+            "These two placeholders are also available directly in the Default/Item naming "
+            "template, if you'd rather place the body there instead.\n"
+        )
+        self.per_part_filename_template_edit.setToolTip(
+            per_part_filename_template_tooltip
+        )
+        self.per_part_filename_template_edit.setPlaceholderText(
+            preferences.DEFAULT_BODY_NAME_TEMPLATE
+        )
+        per_part_filename_template_label = QtWidgets.QLabel(
+            "Per-part filename template"
+        )
+        per_part_filename_template_label.setToolTip(per_part_filename_template_tooltip)
+        layout.addRow(
+            per_part_filename_template_label, self.per_part_filename_template_edit
+        )
+
     def loadSettings(self):
         self.relative_path_edit.setText(preferences.get_export_relative_path())
 
@@ -79,6 +101,10 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
             preferences.get_enforce_preferred_formats()
         )
 
+        self.per_part_filename_template_edit.setText(
+            preferences.get_body_name_template()
+        )
+
     def saveSettings(self):
         preferences.set_export_relative_path(self.relative_path_edit.text())
 
@@ -91,4 +117,9 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         preferences.set_allow_per_item_formats(self.allow_per_item_checkbox.isChecked())
         preferences.set_enforce_preferred_formats(
             self.enforce_preferred_checkbox.isChecked()
+        )
+
+        preferences.set_body_name_template(
+            self.per_part_filename_template_edit.text()
+            or preferences.DEFAULT_BODY_NAME_TEMPLATE
         )

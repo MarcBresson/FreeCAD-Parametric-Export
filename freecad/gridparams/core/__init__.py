@@ -9,7 +9,13 @@ from .config import (
     config_to_json,
     expand_config,
 )
-from .export_plan import ExportJob, build_export_jobs_for_variation, sanitize_filename
+from .export_plan import (
+    DEFAULT_BODY_NAME_TEMPLATE,
+    ExportJob,
+    apply_body_name_template,
+    build_export_jobs_for_variation,
+    sanitize_filename,
+)
 from .grid import ParameterGrid
 from .naming import NamingTemplateError, resolve_name
 from .values import Fixed, LinSpace, Range, ValueList, normalize_param_values
@@ -25,7 +31,9 @@ __all__ = [
     "config_from_json",
     "config_to_json",
     "expand_config",
+    "DEFAULT_BODY_NAME_TEMPLATE",
     "ExportJob",
+    "apply_body_name_template",
     "build_export_jobs_for_variation",
     "sanitize_filename",
     "ParameterGrid",

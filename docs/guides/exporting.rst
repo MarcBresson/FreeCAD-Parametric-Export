@@ -12,24 +12,22 @@ combo appears with two options:
 - **"Combine parts into one file"**: every selected object goes into a single output file per
   variation.
 - **"One file per part"** (the default): each object gets its own output file, with its body
-  label appended or prepended to the variation name so the files don't collide.
+  label placed into the variation name (see below) so the files don't collide.
 
 .. note::
 
    With one object selected, both options produce exactly the same output: a single
    file, with no body-label suffix at all. The split only has a visible effect once you have 2
-   or more objects selected. (This row, and the body-name combo described next, are hidden
-   from the dialog entirely until you have 2+ objects selected; see the
-   :ref:`exact visibility rules <objects-panel-visibility-rules>` in :doc:`/dialog-overview`;
-   this page focuses on the filenames that result.)
+   or more objects selected. (This row is hidden from the dialog entirely until you have 2+
+   objects selected; see the :ref:`exact visibility rules <objects-panel-visibility-rules>` in
+   :doc:`/dialog-overview`; this page focuses on the filenames that result.)
 
 Where the body label goes
 ----------------------------
 
-When exporting one file per part, a second combo controls placement:
-
-- **"Append body label to name"** (default) → ``<variation name> - <body label>``
-- **"Prepend body label to name"** → ``<body label> - <variation name>``
+When exporting one file per part, where the body label lands in the filename is controlled by
+the global **"Per-part filename template"** preference -- see
+:ref:`per-part-filename-template` in :doc:`preferences` for the placeholders and examples.
 
 This uses the object's **Label** (the human-readable name you see in the tree), not its
 internal Name. Either way, characters that aren't valid in filenames

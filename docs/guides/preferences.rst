@@ -2,7 +2,7 @@ Preferences and format precedence
 ====================================
 
 This addon ads new preferences to the FreeCAD interface. They can be found all under the
-**Edit ▸ Preferences** menu. The **Edit ▸ Preferences ▸ Grid Params Export** has four settings:
+**Edit ▸ Preferences** menu. The **Edit ▸ Preferences ▸ Grid Params Export** has five settings:
 
 .. todo::
 
@@ -17,12 +17,38 @@ This addon ads new preferences to the FreeCAD interface. They can be found all u
   the dialog is allowed to override the preferred formats at all.
 - **"Enforce preferred formats for every export"**: when on, the preferred formats always
   win, no matter what any grid item has saved.
+- **"Per-part filename template"**: how each part's output filename is built when exporting
+  one file per part (see :ref:`per-part-filename-template` below).
 
 .. note::
 
    The preferred-formats list is built once per FreeCAD session. A format registered by a
    workbench you load *after* first opening this dialog won't appear in the list until you
    restart FreeCAD.
+
+.. _per-part-filename-template:
+
+Per-part filename template
+-------------------------------
+
+When exporting one file per part (see :ref:`combine-split-export` in :doc:`exporting`), this
+template controls how each part's filename is built. It has three placeholders, ``{name}``
+(the already-resolved variation name), ``{body_label}`` (the part's Label), and ``{body_name}``
+(the part's internal Name), combined however you like:
+
+- ``{name} - {body_label}`` (the default) → ``<variation name> - <body label>``
+- ``{body_label} - {name}`` → ``<body label> - <variation name>``
+
+Because it's a preference rather than a per-grid-config setting, it applies the same way to
+every grid config in every document -- it mainly affects the alphabetical order your exports
+land in, so it's set once to match how you like your output folder organized, not tuned per
+export.
+
+``{body_label}``/``{body_name}`` are also accepted directly in the Default/Item naming
+template itself (see :ref:`naming-templates-section` in :doc:`parameter-grids`), if you'd
+rather place the body somewhere other than what this preference appends. If your naming
+template already embeds one of them, set this preference to just ``{name}`` to avoid getting
+the body label twice.
 
 .. _format-precedence-table:
 

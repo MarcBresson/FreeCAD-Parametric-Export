@@ -85,7 +85,7 @@ The objects table, plus three controls: **"+"** opens the "Add Objects" tree pic
 
 .. _objects-panel-visibility-rules:
 
-Two controls below the table are **conditionally visible**:
+One control below the table is **conditionally visible**:
 
 - **"Multi part export per variation"** row (the combine/split combo and its info button) is
   **completely hidden** if 1 object is selected, and appears only once 2 or more
@@ -96,10 +96,9 @@ Two controls below the table are **conditionally visible**:
      Screenshot pair: the objects panel with 1 objects selected, and with 2+
      objects selected, a before/after comparison
 
-- The **body-name combo** (append/prepend) is visible only when *both* conditions hold: 2 or
-  more objects are selected, *and* the multi-part combo is set to "One file per part."
-  Switching back to "Combine parts into one file" hides it again, even with the same objects
-  still selected.
+Where the body label lands in the filename (when splitting into one file per part) is a global
+preference, not a per-config control here -- see :ref:`per-part-filename-template` in
+:doc:`guides/preferences`.
 
 See the :ref:`combine/split rules <combine-split-export>` in :doc:`guides/exporting` for what
 these settings actually do to your output filenames.

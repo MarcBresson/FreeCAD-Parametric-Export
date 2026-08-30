@@ -9,7 +9,7 @@ which shape produced it.
 import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any
 
 from .grid import ParameterGrid
 from .naming import resolve_name
@@ -96,9 +96,6 @@ class ExportSettings:
     combine: bool = False
     selected_object_names: list[str] = field(default_factory=list)
     last_export_folder: str = ""
-    body_name_placement: Literal["append", "prepend"] = (
-        "append"  # only relevant when combine is False
-    )
     csv_include_value: bool = True
     csv_include_unit: bool = True
     csv_include_freecad_unit: bool = True
@@ -117,6 +114,9 @@ class GridConfig:
 
 
 def expand_config(config: GridConfig, document_label: str = "") -> list[Variation]:
+    """{body_label}/{body_name} are also valid in a naming template, resolving here to "" since
+    a variation isn't tied to one body yet -- build_export_jobs_for_variation re-resolves the
+    same template with the real body once the export is split into one file per part."""
     variations = []
     for item in config.items:
         template = (
@@ -125,12 +125,16 @@ def expand_config(config: GridConfig, document_label: str = "") -> list[Variatio
             else config.naming_template
         )
         for resolved_params in ParameterGrid(item.params):
+            identity_params = {**resolved_params, "body_label": "", "body_name": ""}
             variations.append(
                 Variation(
                     name=resolve_name(
-                        template, config.base_name, resolved_params, document_label
+                        template, config.base_name, identity_params, document_label
                     ),
                     params=resolved_params,
+                    name_template=template,
+                    base_name=config.base_name,
+                    document_label=document_label,
                     formats=item.formats,
                 )
             )
@@ -158,7 +162,6 @@ def config_to_json(config: GridConfig) -> str:
             "combine": config.export_settings.combine,
             "selected_object_names": list(config.export_settings.selected_object_names),
             "last_export_folder": config.export_settings.last_export_folder,
-            "body_name_placement": config.export_settings.body_name_placement,
             "csv_include_value": config.export_settings.csv_include_value,
             "csv_include_unit": config.export_settings.csv_include_unit,
             "csv_include_freecad_unit": config.export_settings.csv_include_freecad_unit,
@@ -189,7 +192,6 @@ def config_from_json(raw: str) -> GridConfig:
         combine=export_data.get("combine", False),
         selected_object_names=list(export_data.get("selected_object_names", [])),
         last_export_folder=export_data.get("last_export_folder", ""),
-        body_name_placement=export_data.get("body_name_placement", "append"),
         csv_include_value=export_data.get("csv_include_value", True),
         csv_include_unit=export_data.get("csv_include_unit", True),
         csv_include_freecad_unit=export_data.get("csv_include_freecad_unit", True),

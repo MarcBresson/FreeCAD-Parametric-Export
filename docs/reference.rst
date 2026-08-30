@@ -19,6 +19,10 @@ Naming template placeholders
      - The current document's label.
    * - ``{<parameter name>}``
      - One placeholder per parameter used in that grid item, e.g. ``{Length}``.
+   * - ``{body_label}`` / ``{body_name}``
+     - The Label / internal Name of the object being exported for this file. If objects
+       are combined into a single file, the first object is used. See
+       :ref:`per-part-filename-template` in :doc:`guides/preferences`.
 
 Referencing a placeholder that isn't available raises an error listing exactly which
 placeholders are valid for that item.
@@ -67,18 +71,19 @@ Combine/split filename pattern
      - Resulting file stem
    * - Combined, or 0–1 objects selected
      - ``<variation name>``
-   * - Split, "Append body label to name" (default)
+   * - Split, default "Per-part filename template" (``{name} - {body_label}``)
      - ``<variation name> - <body label>``
-   * - Split, "Prepend body label to name"
+   * - Split, "Per-part filename template" set to ``{body_label} - {name}``
      - ``<body label> - <variation name>``
 
 "Split" only applies with 2 or more objects selected; see the
-:ref:`combine/split rules <combine-split-export>` in :doc:`guides/exporting`.
+:ref:`combine/split rules <combine-split-export>` in :doc:`guides/exporting`. The template
+itself is a global preference, not a per-config setting -- see below.
 
 Preferences quick reference
 -------------------------------
 
-All four settings live under the FreeCAD parameter group
+All five settings live under the FreeCAD parameter group
 ``User parameter:BaseApp/Preferences/Mod/GridParams``.
 
 .. list-table::
@@ -100,6 +105,11 @@ All four settings live under the FreeCAD parameter group
    * - Enforce preferred formats for every export
      - Off
      - When on, always wins over any per-item override.
+   * - Per-part filename template
+     - ``{name} - {body_label}``
+     - How each part's filename is built when exporting one file per part. Placeholders:
+       ``{name}`` (variation name), ``{body_label}`` (the part's Label), and ``{body_name}``
+       (the part's internal Name).
 
 See the :ref:`full precedence table <format-precedence-table>` in :doc:`guides/preferences`
 for worked examples.

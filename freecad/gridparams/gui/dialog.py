@@ -319,10 +319,17 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _build_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
 
+        naming_template_tooltip = (
+            "Placeholders: {base_name}, {document_label}, any grid parameter name, and "
+            "{body_label}/{body_name} (the part's Label/internal Name).\n"
+            "The body placeholders resolve to the first selected object when several are "
+            "combined into one file, and are blank only if nothing is selected."
+        )
         header_form = QtWidgets.QFormLayout()
         self.base_name_edit = QtWidgets.QLineEdit()
         self.naming_template_edit = QtWidgets.QLineEdit()
         self.naming_template_edit.setPlaceholderText("{base_name} - {ParamName}")
+        self.naming_template_edit.setToolTip(naming_template_tooltip)
         self.varset_combo = QtWidgets.QComboBox()
         self.varset_combo.addItems(
             [obj.Name for obj in self.doc.Objects if obj.TypeId == "App::VarSet"]
@@ -372,6 +379,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         self.item_name_template_edit = QtWidgets.QLineEdit()
         self.item_name_template_edit.setPlaceholderText("{base_name} - {ParamName}")
+        self.item_name_template_edit.setToolTip(naming_template_tooltip)
         self.item_name_template_edit.textChanged.connect(self._refresh_preview)
         self.item_name_template_edit.textChanged.connect(
             self._on_item_name_template_changed
@@ -435,7 +443,8 @@ class GridParamsDialog(QtWidgets.QDialog):
             '"Combine parts into one file" merges all of the variation\'s parts into a '
             "single output file.\n"
             '"One file per part" exports each part as its own file, using the part\'s '
-            "body label (see below) to keep the filenames unique."
+            "body label to keep the filenames unique (filename template configurable in "
+            "Edit > Preferences > Grid Params Export)."
         )
 
         self.multi_part_row_widget = QtWidgets.QWidget()
@@ -457,27 +466,11 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         self.multi_part_combo.setCurrentIndex(1)
 
-        self.body_name_combo = QtWidgets.QComboBox()
-        self.body_name_combo.addItems(
-            ["Append body label to name", "Prepend body label to name"]
-        )
-        self.body_name_combo.setToolTip(
-            "Where to place each part's body label in the exported filename, when "
-            "exporting one file per part."
-        )
-
         multi_part_row.addWidget(multi_part_label)
         multi_part_row.addWidget(multi_part_info_btn)
         multi_part_row.addWidget(self.multi_part_combo)
-        multi_part_row.addSpacing(12)
-        multi_part_row.addWidget(self.body_name_combo)
         multi_part_row.addStretch(1)
         export_layout.addWidget(self.multi_part_row_widget)
-
-        self.multi_part_combo.currentIndexChanged.connect(
-            self._update_body_name_combo_visibility
-        )
-        self._update_body_name_combo_visibility()
 
         layout.addWidget(export_group)
 
@@ -529,10 +522,6 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.multi_part_combo.setCurrentIndex(
             0 if config.export_settings.combine else 1
         )
-        self.body_name_combo.setCurrentIndex(
-            1 if config.export_settings.body_name_placement == "prepend" else 0
-        )
-        self._update_body_name_combo_visibility()
 
         self._csv_options = VarSetCsvOptions(
             include_value=config.export_settings.csv_include_value,
@@ -762,9 +751,6 @@ class GridParamsDialog(QtWidgets.QDialog):
                 combine=self.multi_part_combo.currentIndex() == 0,
                 selected_object_names=list(self._selected_object_names),
                 last_export_folder=self._last_export_folder,
-                body_name_placement="prepend"
-                if self.body_name_combo.currentIndex() == 1
-                else "append",
                 csv_include_value=self._csv_options.include_value,
                 csv_include_unit=self._csv_options.include_unit,
                 csv_include_freecad_unit=self._csv_options.include_freecad_unit,
@@ -819,7 +805,6 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _update_multi_part_visibility(self):
         self.multi_part_row_widget.setVisible(len(self._selected_object_names) > 1)
-        self._update_body_name_combo_visibility()
 
     def _add_objects(self):
         excluded = {
@@ -845,13 +830,6 @@ class GridParamsDialog(QtWidgets.QDialog):
         for row in rows:
             del self._selected_object_names[row]
         self._refresh_objects_table()
-
-    def _update_body_name_combo_visibility(self):
-        show = (
-            len(self._selected_object_names) > 1
-            and self.multi_part_combo.currentIndex() == 1
-        )
-        self.body_name_combo.setVisible(show)
 
     def _on_export_varset_csv(self):
         varset = self.doc.getObject(self.varset_combo.currentText())
