@@ -1,2 +1,6 @@
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.rstcheck]
+report_level = "warning"
+ignore_directives = ["todo", "changelog"]

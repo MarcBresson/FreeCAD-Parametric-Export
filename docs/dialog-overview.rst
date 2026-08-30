@@ -38,20 +38,22 @@ Item detail panel (right)
 Always visible, and reflects whichever item is currently selected on the left:
 
 - **Item naming template**: blank means "inherit the default template above."
-- **Parameters table**, three columns:
+- **Parameters table**, four columns:
 
   - **Parameter**: an *editable* combo box pre-filled with the selected VarSet's own
     property names, but it accepts any text you type.
-
-    .. warning::
-
-       Nothing validates that a typed parameter name matches a real property on the VarSet;
-       double-check spelling against the VarSet's property list.
-
   - **Kind**: ``Fixed`` / ``List`` / ``LinSpace`` / ``Range``.
   - **Value**: free text. Its *placeholder* changes with the selected Kind, to remind you of
     the expected format: ``Fixed`` → "e.g. 12", ``List`` → "e.g. 1000, 1500, 2000",
     ``LinSpace`` → "start, stop, num", ``Range`` → "start, stop, step".
+  - A narrow, unlabeled column that shows a warning icon whenever the Parameter cell's
+    text doesn't match one of the selected VarSet's properties; hover it for a tooltip
+    naming the offending parameter and VarSet.
+
+    .. note::
+
+       This only checks that the name exists on the VarSet -- it does not catch every
+       possible export-time failure.
 
   **Add Parameter** / **Remove Parameter** sit below the table.
 
@@ -85,7 +87,7 @@ The objects table, plus three controls: **"+"** opens the "Add Objects" tree pic
 
 .. _objects-panel-visibility-rules:
 
-Two controls below the table are **conditionally visible**:
+One control below the table is **conditionally visible**:
 
 - **"Multi part export per variation"** row (the combine/split combo and its info button) is
   **completely hidden** if 1 object is selected, and appears only once 2 or more
@@ -96,10 +98,9 @@ Two controls below the table are **conditionally visible**:
      Screenshot pair: the objects panel with 1 objects selected, and with 2+
      objects selected, a before/after comparison
 
-- The **body-name combo** (append/prepend) is visible only when *both* conditions hold: 2 or
-  more objects are selected, *and* the multi-part combo is set to "One file per part."
-  Switching back to "Combine parts into one file" hides it again, even with the same objects
-  still selected.
+Where the body label lands in the filename (when splitting into one file per part) is a global
+preference, not a per-config control here -- see :ref:`per-part-filename-template` in
+:doc:`guides/preferences`.
 
 See the :ref:`combine/split rules <combine-split-export>` in :doc:`guides/exporting` for what
 these settings actually do to your output filenames.
@@ -109,17 +110,22 @@ these settings actually do to your output filenames.
 Formats button
 --------------
 
-Always visible, never hidden, but its text and whether it's clickable depend on two global
-preferences crossed with whether this specific grid item has a saved format override. You'll
+Always visible, never hidden, but its text and whether it's clickable depend on a global
+preference crossed with whether this specific grid item has a saved format override. You'll
 see one of these on-screen states:
 
-- ``Formats (enforced): ...``, disabled; the global "enforce" preference always wins.
 - ``Formats (preferred): ...``, enabled or disabled depending on context.
 - ``Formats (this grid instance): ...``, enabled; this item has its own override in effect.
 
 the :ref:`full precedence table <format-precedence-table>` in :doc:`guides/preferences`
 explains each state exactly; this page just tells you the button won't always say (or do) the
 same thing.
+
+A small red **✖** button appears immediately to the right of the Formats button whenever this
+grid item has a saved per-item override (i.e. whenever the button reads
+``Formats (this grid instance): ...`` or the override is inactive but still saved, see
+:ref:`the precedence table <format-precedence-table>`). Click it to drop the item's override and
+fall back to the preferred formats; it disappears again once there's nothing left to remove.
 
 Footer
 ------

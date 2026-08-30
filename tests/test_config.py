@@ -13,6 +13,7 @@ from freecad.gridparams.core.config import (
     config_to_json,
     expand_config,
 )
+from freecad.gridparams.core.export_plan import build_export_jobs_for_variation
 from freecad.gridparams.core.values import Fixed, LinSpace, ValueList
 from freecad.gridparams.core.variation import find_duplicate_names
 
@@ -35,6 +36,31 @@ def test_macro_style_basic_list_no_sampler():
     variations = expand_config(config)
     assert [v.name for v in variations] == ["XS", "S"]
     assert variations[0].params == {"Base_CableLength": 1000, "Base_CableThickness": 3}
+
+
+def test_naming_template_referencing_body_label_resolves_per_body_on_export():
+    """An item/default naming template can reference {body_label} directly; expand_config
+    defers it (no per-body context exists yet), and build_export_jobs_for_variation later
+    fills it in once a body is known."""
+    config = GridConfig(
+        base_name="Base",
+        naming_template="{base_name} - {body_label}",
+        items=[GridItem(params={})],
+        export_settings=ExportSettings(
+            combine=False, selected_object_names=["Body001", "Body003"]
+        ),
+    )
+    variations = expand_config(config)
+    assert len(variations) == 1
+
+    jobs = build_export_jobs_for_variation(
+        variations[0],
+        config.export_settings,
+        object_labels={"Body001": "Left Arm"},
+        body_name_template="{name}",
+    )
+    assert jobs[0].output_stem == "Base - Left Arm"
+    assert jobs[1].output_stem == "Base - Body003"
 
 
 def test_single_dict_grid_expands_via_cartesian_product_with_template_naming():
@@ -98,7 +124,6 @@ def test_config_json_roundtrip_preserves_samplers_and_settings():
             combine=True,
             selected_object_names=["Body001", "Body003"],
             last_export_folder="/tmp/export",
-            body_name_placement="prepend",
             csv_include_value=False,
             csv_include_unit=False,
             csv_include_freecad_unit=False,

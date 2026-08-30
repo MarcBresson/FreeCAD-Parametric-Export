@@ -23,7 +23,7 @@ quickstart, a full tour of the dialog, and detailed guides.
 - A tree-based object picker that hides Body-internal features by default, showing only
   finished, exportable parts.
 - Per-format export preferences: a global preferred-formats list, with an optional per-item
-  override and an enforce toggle.
+  override.
 - Your VarSet's values are always restored after export, whether it succeeds or fails partway
   through.
 - A VarSet-to-CSV export, handy for generating parameter documentation alongside your files.

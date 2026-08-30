@@ -33,4 +33,11 @@ repos:
     rev: v2.3.0
     hooks:
       - id: mypy
-        args: [--follow-imports, skip, --ignore-missing-imports, --show-error-codes]
+        args:
+          [--follow-imports, skip, --ignore-missing-imports, --show-error-codes]
+
+  - repo: https://github.com/rstcheck/rstcheck
+    rev: v6.3.0
+    hooks:
+      - id: rstcheck
+        additional_dependencies: ["rstcheck[sphinx,toml]"]

@@ -12,24 +12,22 @@ combo appears with two options:
 - **"Combine parts into one file"**: every selected object goes into a single output file per
   variation.
 - **"One file per part"** (the default): each object gets its own output file, with its body
-  label appended or prepended to the variation name so the files don't collide.
+  label placed into the variation name (see below) so the files don't collide.
 
 .. note::
 
    With one object selected, both options produce exactly the same output: a single
    file, with no body-label suffix at all. The split only has a visible effect once you have 2
-   or more objects selected. (This row, and the body-name combo described next, are hidden
-   from the dialog entirely until you have 2+ objects selected; see the
-   :ref:`exact visibility rules <objects-panel-visibility-rules>` in :doc:`/dialog-overview`;
-   this page focuses on the filenames that result.)
+   or more objects selected. (This row is hidden from the dialog entirely until you have 2+
+   objects selected; see the :ref:`exact visibility rules <objects-panel-visibility-rules>` in
+   :doc:`/dialog-overview`; this page focuses on the filenames that result.)
 
 Where the body label goes
 ----------------------------
 
-When exporting one file per part, a second combo controls placement:
-
-- **"Append body label to name"** (default) → ``<variation name> - <body label>``
-- **"Prepend body label to name"** → ``<body label> - <variation name>``
+When exporting one file per part, where the body label lands in the filename is controlled by
+the global **"Per-part filename template"** preference -- see
+:ref:`per-part-filename-template` in :doc:`preferences` for the placeholders and examples.
 
 This uses the object's **Label** (the human-readable name you see in the tree), not its
 internal Name. Either way, characters that aren't valid in filenames
@@ -43,6 +41,11 @@ exports to, but what it shows and whether it's even clickable depends on your gl
 preferences. The :ref:`full precedence table <format-precedence-table>` in :doc:`preferences`
 has worked examples; this page assumes you're using whatever your preferences already resolve
 to.
+
+Once you've saved a per-item override on a grid item, a small red **✖** button appears next to
+the Formats button. Click it to remove that item's override in one step, instead of reopening
+the format picker and deselecting everything -- the item then falls back to the preferred
+formats.
 
 Running the export
 ---------------------
@@ -68,7 +71,7 @@ Five buttons in the footer:
 Where files are written
 --------------------------
 
-The regular **Export** button writes to a folder resolved from the global "Grid export
+The regular **Export** button writes to a folder resolved from the global "Export
 relative path" preference (:doc:`preferences`), always **relative to the document's own
 folder**. As the preference page's own tooltip puts it:
 

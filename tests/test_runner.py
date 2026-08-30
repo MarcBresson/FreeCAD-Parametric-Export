@@ -29,6 +29,9 @@ def test_run_export_restores_varset_values_after_success(monkeypatch, tmp_path):
     config = _make_config(Width=[1, 2])
 
     monkeypatch.setattr(runner, "resolve_objects", lambda doc, names: [])
+    monkeypatch.setattr(
+        runner.preferences, "get_body_name_template", lambda: "{name} - {body_label}"
+    )
     monkeypatch.setattr(runner, "export_objects", lambda objects, path, format_id: path)
     monkeypatch.setattr(
         runner.preferences, "resolve_effective_formats", lambda item_formats: ["3mf"]
@@ -46,6 +49,9 @@ def test_run_export_restores_varset_values_after_failure(monkeypatch, tmp_path):
     config = _make_config(Width=[1, 2])
 
     monkeypatch.setattr(runner, "resolve_objects", lambda doc, names: [])
+    monkeypatch.setattr(
+        runner.preferences, "get_body_name_template", lambda: "{name} - {body_label}"
+    )
     monkeypatch.setattr(
         runner.preferences, "resolve_effective_formats", lambda item_formats: ["3mf"]
     )
@@ -70,6 +76,9 @@ def test_run_export_uses_format_override_regardless_of_preferences(
     config = _make_config(Width=[1])
 
     monkeypatch.setattr(runner, "resolve_objects", lambda doc, names: [])
+    monkeypatch.setattr(
+        runner.preferences, "get_body_name_template", lambda: "{name} - {body_label}"
+    )
     seen_formats = []
 
     def fake_export(objects, path, format_id):

@@ -77,6 +77,13 @@ syntax, with these placeholders available:
 - ``{base_name}``: the Base Name field.
 - ``{document_label}``: the current document's label.
 - one placeholder per parameter name used in *that* grid item (e.g. ``{Length}``).
+- ``{body_label}``/``{body_name}``: the Label/internal Name of the object being exported for
+  this file (see :ref:`combine-split-export` in :doc:`exporting`). If objects are combined
+  into a single file, the first object is used. Referencing these is optional -- the global
+  **"Per-part filename template"** preference (:ref:`per-part-filename-template` in
+  :doc:`preferences`) already appends the body label by default when splitting, so you only
+  need this if you want the body placed somewhere other than the end of the name, combined
+  with other parts of the template, or shown even when not splitting.
 
 If you reference a placeholder that isn't available (a typo, or a parameter that only exists
 in a different item) the status line shows an error message that lists exactly which

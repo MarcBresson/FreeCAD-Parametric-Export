@@ -319,10 +319,17 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _build_ui(self):
         layout = QtWidgets.QVBoxLayout(self)
 
+        naming_template_tooltip = (
+            "Placeholders: {base_name}, {document_label}, any grid parameter name, and "
+            "{body_label}/{body_name} (the part's Label/internal Name).\n"
+            "The body placeholders resolve to the first selected object when several are "
+            "combined into one file, and are blank only if nothing is selected."
+        )
         header_form = QtWidgets.QFormLayout()
         self.base_name_edit = QtWidgets.QLineEdit()
         self.naming_template_edit = QtWidgets.QLineEdit()
         self.naming_template_edit.setPlaceholderText("{base_name} - {ParamName}")
+        self.naming_template_edit.setToolTip(naming_template_tooltip)
         self.varset_combo = QtWidgets.QComboBox()
         self.varset_combo.addItems(
             [obj.Name for obj in self.doc.Objects if obj.TypeId == "App::VarSet"]
@@ -372,15 +379,21 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         self.item_name_template_edit = QtWidgets.QLineEdit()
         self.item_name_template_edit.setPlaceholderText("{base_name} - {ParamName}")
+        self.item_name_template_edit.setToolTip(naming_template_tooltip)
         self.item_name_template_edit.textChanged.connect(self._refresh_preview)
         self.item_name_template_edit.textChanged.connect(
             self._on_item_name_template_changed
         )
         detail_panel.addWidget(self.item_name_template_edit)
 
-        self.params_table = QtWidgets.QTableWidget(0, 3)
-        self.params_table.setHorizontalHeaderLabels(["Parameter", "Kind", "Value"])
-        self.params_table.horizontalHeader().setStretchLastSection(True)
+        self.params_table = QtWidgets.QTableWidget(0, 4)
+        self.params_table.setHorizontalHeaderLabels(["Parameter", "Kind", "Value", ""])
+        self.params_table.horizontalHeader().setSectionResizeMode(
+            2, QtWidgets.QHeaderView.Stretch
+        )
+        self.params_table.horizontalHeader().setSectionResizeMode(
+            3, QtWidgets.QHeaderView.ResizeToContents
+        )
         detail_panel.addWidget(self.params_table)
 
         param_buttons = QtWidgets.QHBoxLayout()
@@ -435,7 +448,8 @@ class GridParamsDialog(QtWidgets.QDialog):
             '"Combine parts into one file" merges all of the variation\'s parts into a '
             "single output file.\n"
             '"One file per part" exports each part as its own file, using the part\'s '
-            "body label (see below) to keep the filenames unique."
+            "body label to keep the filenames unique (filename template configurable in "
+            "Edit > Preferences > Grid Params Export)."
         )
 
         self.multi_part_row_widget = QtWidgets.QWidget()
@@ -457,33 +471,29 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
         self.multi_part_combo.setCurrentIndex(1)
 
-        self.body_name_combo = QtWidgets.QComboBox()
-        self.body_name_combo.addItems(
-            ["Append body label to name", "Prepend body label to name"]
-        )
-        self.body_name_combo.setToolTip(
-            "Where to place each part's body label in the exported filename, when "
-            "exporting one file per part."
-        )
-
         multi_part_row.addWidget(multi_part_label)
         multi_part_row.addWidget(multi_part_info_btn)
         multi_part_row.addWidget(self.multi_part_combo)
-        multi_part_row.addSpacing(12)
-        multi_part_row.addWidget(self.body_name_combo)
         multi_part_row.addStretch(1)
         export_layout.addWidget(self.multi_part_row_widget)
 
-        self.multi_part_combo.currentIndexChanged.connect(
-            self._update_body_name_combo_visibility
-        )
-        self._update_body_name_combo_visibility()
-
         layout.addWidget(export_group)
 
+        item_formats_row = QtWidgets.QHBoxLayout()
         self.item_formats_button = QtWidgets.QPushButton()
         self.item_formats_button.clicked.connect(self._open_format_picker)
-        layout.addWidget(self.item_formats_button)
+        self.item_formats_clear_btn = QtWidgets.QToolButton()
+        self.item_formats_clear_btn.setText("✖")
+        self.item_formats_clear_btn.setStyleSheet("color: red; font-weight: bold;")
+        self.item_formats_clear_btn.setAutoRaise(True)
+        self.item_formats_clear_btn.setToolTip(
+            "Remove the per-instance export format override."
+        )
+        self.item_formats_clear_btn.clicked.connect(self._clear_item_formats)
+        self.item_formats_clear_btn.setVisible(False)
+        item_formats_row.addWidget(self.item_formats_button, 1)
+        item_formats_row.addWidget(self.item_formats_clear_btn)
+        layout.addLayout(item_formats_row)
 
         footer = QtWidgets.QHBoxLayout()
         save_btn = QtWidgets.QPushButton("Save")
@@ -529,10 +539,6 @@ class GridParamsDialog(QtWidgets.QDialog):
         self.multi_part_combo.setCurrentIndex(
             0 if config.export_settings.combine else 1
         )
-        self.body_name_combo.setCurrentIndex(
-            1 if config.export_settings.body_name_placement == "prepend" else 0
-        )
-        self._update_body_name_combo_visibility()
 
         self._csv_options = VarSetCsvOptions(
             include_value=config.export_settings.csv_include_value,
@@ -656,20 +662,19 @@ class GridParamsDialog(QtWidgets.QDialog):
             self._update_item_formats_button()
             self._refresh_preview()
 
+    def _clear_item_formats(self):
+        self._item_formats = None
+        self._update_item_formats_button()
+        self._refresh_preview()
+
     def _update_item_formats_button(self):
         effective = preferences.resolve_effective_formats(self._item_formats)
         effective_text = ", ".join(effective) if effective else "(none)"
         allow_per_item = preferences.get_allow_per_item_formats()
         has_item_override = self._item_formats is not None
+        self.item_formats_clear_btn.setVisible(has_item_override)
 
-        if preferences.get_enforce_preferred_formats():
-            self.item_formats_button.setEnabled(False)
-            self.item_formats_button.setText(f"Formats (enforced): {effective_text}")
-            self.item_formats_button.setToolTip(
-                "Preferred formats are enforced in Preferences; per-item overrides are "
-                "disabled."
-            )
-        elif allow_per_item:
+        if allow_per_item:
             self.item_formats_button.setEnabled(True)
             prefix = "this grid instance" if has_item_override else "preferred"
             self.item_formats_button.setText(f"Formats ({prefix}): {effective_text}")
@@ -710,6 +715,28 @@ class GridParamsDialog(QtWidgets.QDialog):
             combo.addItems(choices)
             combo.setCurrentText(current)
             combo.blockSignals(False)
+
+    def _refresh_param_warnings(self):
+        varset = self.doc.getObject(self.varset_combo.currentText())
+        valid_names = set(varset.PropertiesList) if varset is not None else None
+        warning_icon = self.style().standardIcon(QtWidgets.QStyle.SP_MessageBoxWarning)
+        for row in range(self.params_table.rowCount()):
+            name_combo = self.params_table.cellWidget(row, 0)
+            name = name_combo.currentText().strip() if name_combo else ""
+            item = self.params_table.item(row, 3)
+            if item is None:
+                item = QtWidgets.QTableWidgetItem()
+                item.setFlags(QtCore.Qt.ItemIsEnabled)
+                self.params_table.setItem(row, 3, item)
+            if valid_names is not None and name and name not in valid_names:
+                item.setIcon(warning_icon)
+                item.setToolTip(
+                    f"'{name}' is not a property of VarSet "
+                    f"'{self.varset_combo.currentText()}'."
+                )
+            else:
+                item.setIcon(QtGui.QIcon())
+                item.setToolTip("")
 
     def _add_param_row(self, name="", kind="Fixed", value_text=""):
         row = self.params_table.rowCount()
@@ -762,9 +789,6 @@ class GridParamsDialog(QtWidgets.QDialog):
                 combine=self.multi_part_combo.currentIndex() == 0,
                 selected_object_names=list(self._selected_object_names),
                 last_export_folder=self._last_export_folder,
-                body_name_placement="prepend"
-                if self.body_name_combo.currentIndex() == 1
-                else "append",
                 csv_include_value=self._csv_options.include_value,
                 csv_include_unit=self._csv_options.include_unit,
                 csv_include_freecad_unit=self._csv_options.include_freecad_unit,
@@ -775,6 +799,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         )
 
     def _refresh_preview(self):
+        self._refresh_param_warnings()
         try:
             config = self._build_config_from_widgets()
             variations = expand_config(config, document_label=self.doc.Label)
@@ -819,7 +844,6 @@ class GridParamsDialog(QtWidgets.QDialog):
 
     def _update_multi_part_visibility(self):
         self.multi_part_row_widget.setVisible(len(self._selected_object_names) > 1)
-        self._update_body_name_combo_visibility()
 
     def _add_objects(self):
         excluded = {
@@ -845,13 +869,6 @@ class GridParamsDialog(QtWidgets.QDialog):
         for row in rows:
             del self._selected_object_names[row]
         self._refresh_objects_table()
-
-    def _update_body_name_combo_visibility(self):
-        show = (
-            len(self._selected_object_names) > 1
-            and self.multi_part_combo.currentIndex() == 1
-        )
-        self.body_name_combo.setVisible(show)
 
     def _on_export_varset_csv(self):
         varset = self.doc.getObject(self.varset_combo.currentText())

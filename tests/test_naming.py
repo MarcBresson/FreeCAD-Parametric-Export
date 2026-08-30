@@ -33,3 +33,15 @@ def test_template_substitutes_document_label():
 
 def test_document_label_defaults_to_empty_string():
     assert resolve_name("{document_label}", base_name="Base", params={}) == ""
+
+
+def test_template_substitutes_body_placeholders():
+    """{body_label}/{body_name} are ordinary placeholders here -- resolve_name has no special
+    handling for them; the caller (export_plan.build_export_jobs_for_variation) is responsible
+    for merging in the real values once a body is known."""
+    result = resolve_name(
+        "{base_name} - {body_label} - {body_name}",
+        base_name="Base",
+        params={"body_label": "Left Arm", "body_name": "Body001"},
+    )
+    assert result == "Base - Left Arm - Body001"
