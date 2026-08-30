@@ -4,7 +4,31 @@ resolution there can be imported and tested without a Qt installation."""
 
 from PySide import QtCore, QtWidgets
 
-from . import format_registry, preferences
+from . import doc_links, format_registry, preferences
+
+
+def _hint_label(
+    text: str, url: str | None = None, link_text: str = "Learn more"
+) -> QtWidgets.QLabel:
+    """A small word-wrapped explanatory label, optionally with a link to the docs."""
+    html = text
+    if url:
+        html += f' <a href="{url}">{link_text} ↗</a>'
+    label = QtWidgets.QLabel(html)
+    label.setWordWrap(True)
+    label.setOpenExternalLinks(True)
+    font = label.font()
+    font.setPointSizeF(font.pointSizeF() * 0.9)
+    label.setFont(font)
+    return label
+
+
+def _group_spacer(height: int = 18) -> QtWidgets.QWidget:
+    """An invisible full-width row used to widen the gap between option groups, while
+    `layout`'s own vertical spacing stays tight for each field/hint pair."""
+    spacer = QtWidgets.QWidget()
+    spacer.setFixedHeight(height)
+    return spacer
 
 
 class GridParamsPreferencesPage(QtWidgets.QWidget):
@@ -12,7 +36,10 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        layout = QtWidgets.QFormLayout(self)
+        outer_layout = QtWidgets.QVBoxLayout(self)
+        layout = QtWidgets.QFormLayout()
+        layout.setVerticalSpacing(6)
+        outer_layout.addLayout(layout)
 
         self.relative_path_edit = QtWidgets.QLineEdit()
         tooltip = (
@@ -28,6 +55,13 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         label = QtWidgets.QLabel("Grid export relative path")
         label.setToolTip(tooltip)
         layout.addRow(label, self.relative_path_edit)
+        layout.addRow(
+            _hint_label(
+                "Where Export writes files, relative to the document's own folder.",
+                doc_links.PREFERENCES_GUIDE_URL,
+            )
+        )
+        layout.addRow(_group_spacer())
 
         self.preferred_formats_list = QtWidgets.QListWidget()
         self.preferred_formats_list.setToolTip(
@@ -44,6 +78,13 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         layout.addRow(
             QtWidgets.QLabel("Preferred formats"), self.preferred_formats_list
         )
+        layout.addRow(
+            _hint_label(
+                "Formats exported when a grid item doesn't choose its own.",
+                doc_links.FORMAT_PRECEDENCE_URL,
+            )
+        )
+        layout.addRow(_group_spacer())
 
         self.allow_per_item_checkbox = QtWidgets.QCheckBox(
             "Allow choosing export formats per grid item"
@@ -53,6 +94,13 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
             "overrides the preferred formats above for that item."
         )
         layout.addRow(self.allow_per_item_checkbox)
+        layout.addRow(
+            _hint_label(
+                "Lets each grid item override the preferred formats above.",
+                doc_links.FORMAT_PRECEDENCE_URL,
+            )
+        )
+        layout.addRow(_group_spacer())
 
         self.per_part_filename_template_edit = QtWidgets.QLineEdit()
         per_part_filename_template_tooltip = (
@@ -75,6 +123,14 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         layout.addRow(
             per_part_filename_template_label, self.per_part_filename_template_edit
         )
+        layout.addRow(
+            _hint_label(
+                "How each part's filename is built when exporting one file per part.",
+                doc_links.PER_PART_FILENAME_TEMPLATE_URL,
+            )
+        )
+
+        outer_layout.addStretch(1)
 
     def loadSettings(self):
         self.relative_path_edit.setText(preferences.get_export_relative_path())
