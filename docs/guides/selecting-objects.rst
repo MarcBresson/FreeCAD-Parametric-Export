@@ -16,10 +16,12 @@ dialog at all: the fastest path if you already have the right objects selected.
 **"+"** opens a dedicated **"Add Objects"** picker: a filterable tree view of the whole
 document.
 
-.. todo::
-
-   Screenshot: the "Add Objects" tree picker, showing the "Show only finished parts" checkbox,
-   a grayed-out already-selected item, and the "Or reference by name/label" field.
+.. figure:: ../_static/add-objects-tree.png
+   :alt: the "Add Objects" tree picker, showing the "Show only finished parts" checkbox, a grayed-out already-selected item, and the "Or reference by name/label" field
+   :align: center
+   :width: 1064px
+   :height: 1248px
+   :scale: 50 %
 
 The tree picker
 -----------------

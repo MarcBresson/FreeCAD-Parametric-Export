@@ -18,10 +18,12 @@ Open (or create) a FreeCAD document containing:
 
 Click **"New Grid Export Config..."** in the **Structure** toolbar.
 
-.. todo::
-
-   Screenshot: the Structure toolbar with "New Grid Export Config..." visible next to
-   "Create a variable set".
+.. figure:: _static/toolbar-icon.png
+   :alt: the Structure toolbar with "New Grid Export Config..." visible next to "Create a variable set"
+   :align: center
+   :width: 520px
+   :height: 82px
+   :scale: 50 %
 
 3. Pick your VarSet
 ----------------------

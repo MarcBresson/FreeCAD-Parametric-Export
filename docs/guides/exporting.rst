@@ -97,9 +97,12 @@ It dumps every property of the selected VarSet (name, property group, value, uni
 ...) to a CSV file, which is handy for generating parameter documentation to go alongside
 your exported models.
 
-.. todo::
-
-   Screenshot: the VarSet CSV export dialog, showing the column checkboxes.
+.. figure:: ../_static/csv-export-dialog.png
+   :alt: the VarSet CSV export dialog, showing the column checkboxes
+   :align: center
+   :width: 1000px
+   :height: 704px
+   :scale: 50 %
 
 Checkboxes let you choose which columns to include, and whether to include "private"
 variables: a variable is considered private if its name **or** its property group starts with

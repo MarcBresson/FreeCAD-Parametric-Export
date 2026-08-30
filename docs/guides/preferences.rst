@@ -4,9 +4,9 @@ Preferences and format precedence
 This addon ads new preferences to the FreeCAD interface. They can be found all under the
 **Edit ▸ Preferences** menu. The **Edit ▸ Preferences ▸ Grid Params Export** has four settings:
 
-.. todo::
-
-   Screenshot: the Grid Params Export preferences page, all four fields visible.
+.. figure:: ../_static/user-preferences.png
+   :alt: the Grid Params Export preferences page, all four fields visible
+   :align: center
 
 - **"Export relative path"**: where **Export** writes files, relative to the current
   document's own folder. Empty means the same folder as the document.

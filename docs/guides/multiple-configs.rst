@@ -17,9 +17,12 @@ The tree context menu
 
 Right-clicking a configuration object in the tree gives you:
 
-.. todo::
-
-   Screenshot: the right-click context menu on a Grid Params Config tree object.
+.. figure:: ../_static/context-menu.png
+   :alt: the right-click context menu on a Grid Params Config tree object
+   :align: center
+   :width: 770px
+   :height: 698px
+   :scale: 50 %
 
 - **"Edit..."**: opens the dialog for that configuration.
 - **"Export using config"**: runs an export directly, without opening the dialog.
