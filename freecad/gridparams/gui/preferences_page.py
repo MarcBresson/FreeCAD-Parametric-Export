@@ -23,12 +23,24 @@ def _hint_label(
     return label
 
 
-def _group_spacer(height: int = 18) -> QtWidgets.QWidget:
-    """An invisible full-width row used to widen the gap between option groups, while
-    `layout`'s own vertical spacing stays tight for each field/hint pair."""
-    spacer = QtWidgets.QWidget()
-    spacer.setFixedHeight(height)
-    return spacer
+def _make_card() -> tuple[QtWidgets.QFrame, QtWidgets.QFormLayout]:
+    """A light-gray rounded card grouping one setting and its hint text, matching the
+    section styling used by FreeCAD's other preference pages. Uses a translucent gray
+    fill rather than a hardcoded color so it reads correctly in both light and dark themes."""
+    card = QtWidgets.QFrame()
+    card.setObjectName("SettingsCard")
+    card.setStyleSheet(
+        "QFrame#SettingsCard {"
+        " background-color: rgba(127, 127, 127, 30);"
+        " border-radius: 8px;"
+        "}"
+    )
+    card_layout = QtWidgets.QVBoxLayout(card)
+    card_layout.setContentsMargins(12, 10, 12, 10)
+    form = QtWidgets.QFormLayout()
+    form.setVerticalSpacing(6)
+    card_layout.addLayout(form)
+    return card, form
 
 
 class GridParamsPreferencesPage(QtWidgets.QWidget):
@@ -36,11 +48,11 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setWindowTitle("General")
         outer_layout = QtWidgets.QVBoxLayout(self)
-        layout = QtWidgets.QFormLayout()
-        layout.setVerticalSpacing(6)
-        outer_layout.addLayout(layout)
+        outer_layout.setSpacing(12)
 
+        path_card, path_form = _make_card()
         self.relative_path_edit = QtWidgets.QLineEdit()
         tooltip = (
             "Exports are written here, resolved relative to each FreeCAD document's "
@@ -54,15 +66,16 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         )
         label = QtWidgets.QLabel("Export relative path")
         label.setToolTip(tooltip)
-        layout.addRow(label, self.relative_path_edit)
-        layout.addRow(
+        path_form.addRow(label, self.relative_path_edit)
+        path_form.addRow(
             _hint_label(
                 "Where Export writes files, relative to the document's own folder.",
                 doc_links.PREFERENCES_GUIDE_URL,
             )
         )
-        layout.addRow(_group_spacer())
+        outer_layout.addWidget(path_card)
 
+        formats_card, formats_form = _make_card()
         self.preferred_formats_list = QtWidgets.QListWidget()
         self.preferred_formats_list.setToolTip(
             "Formats used whenever a grid item doesn't specify its own. Select one or more --"
@@ -75,17 +88,18 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             self.preferred_formats_list.addItem(item)
-        layout.addRow(
+        formats_form.addRow(
             QtWidgets.QLabel("Preferred formats"), self.preferred_formats_list
         )
-        layout.addRow(
+        formats_form.addRow(
             _hint_label(
                 "Formats exported when a grid item doesn't choose its own.",
                 doc_links.FORMAT_PRECEDENCE_URL,
             )
         )
-        layout.addRow(_group_spacer())
+        outer_layout.addWidget(formats_card)
 
+        allow_card, allow_form = _make_card()
         self.allow_per_item_checkbox = QtWidgets.QCheckBox(
             "Allow choosing export formats per grid item"
         )
@@ -93,15 +107,16 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
             "When checked, the Grid Params dialog shows a per-item format picker that "
             "overrides the preferred formats above for that item."
         )
-        layout.addRow(self.allow_per_item_checkbox)
-        layout.addRow(
+        allow_form.addRow(self.allow_per_item_checkbox)
+        allow_form.addRow(
             _hint_label(
                 "Lets each grid item override the preferred formats above.",
                 doc_links.FORMAT_PRECEDENCE_URL,
             )
         )
-        layout.addRow(_group_spacer())
+        outer_layout.addWidget(allow_card)
 
+        template_card, template_form = _make_card()
         self.per_part_filename_template_edit = QtWidgets.QLineEdit()
         per_part_filename_template_tooltip = (
             "How each part's output filename is built when exporting one file per part.\n"
@@ -120,15 +135,16 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
             "Per-part filename template"
         )
         per_part_filename_template_label.setToolTip(per_part_filename_template_tooltip)
-        layout.addRow(
+        template_form.addRow(
             per_part_filename_template_label, self.per_part_filename_template_edit
         )
-        layout.addRow(
+        template_form.addRow(
             _hint_label(
                 "How each part's filename is built when exporting one file per part.",
                 doc_links.PER_PART_FILENAME_TEMPLATE_URL,
             )
         )
+        outer_layout.addWidget(template_card)
 
         outer_layout.addStretch(1)
 
