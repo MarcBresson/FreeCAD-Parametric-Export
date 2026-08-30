@@ -49,6 +49,7 @@ lib/*/build
 dist/
 build/
 out/
+docs/_build/
 
 # ==============================
 # Misc
