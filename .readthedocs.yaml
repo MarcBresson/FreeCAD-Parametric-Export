@@ -11,9 +11,11 @@ build:
     # git-lfs isn't preinstalled on RTD's build image.
     - git-lfs
   jobs:
-    post_checkout:
+    post_system_dependencies:
       # RTD does a shallow, non-LFS clone by default; screenshots in
       # docs/_static are stored via Git LFS and must be pulled explicitly.
+      # apt_packages (git-lfs) aren't installed until the system_dependencies
+      # stage, which runs after post_checkout, so this must live here instead.
       - git lfs install
       - git lfs pull
 
