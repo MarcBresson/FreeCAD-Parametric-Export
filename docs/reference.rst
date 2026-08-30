@@ -92,7 +92,7 @@ All four settings live under the FreeCAD parameter group
    * - Setting
      - Default
      - Effect
-   * - Grid export relative path
+   * - Export relative path
      - *(empty)*
      - Where **Export** writes files, relative to the document's own folder. Empty = same
        folder as the document.

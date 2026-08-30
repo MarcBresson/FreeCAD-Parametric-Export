@@ -43,7 +43,7 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
 
         self.relative_path_edit = QtWidgets.QLineEdit()
         tooltip = (
-            "Grid exports are written here, resolved relative to each FreeCAD document's "
+            "Exports are written here, resolved relative to each FreeCAD document's "
             "own folder.\n"
             "Leave empty to export next to the document.\n"
             "This applies to every document -- no export path is stored inside .FCStd files."
@@ -52,7 +52,7 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
         self.relative_path_edit.setPlaceholderText(
             "Same folder as the FreeCAD document"
         )
-        label = QtWidgets.QLabel("Grid export relative path")
+        label = QtWidgets.QLabel("Export relative path")
         label.setToolTip(tooltip)
         layout.addRow(label, self.relative_path_edit)
         layout.addRow(

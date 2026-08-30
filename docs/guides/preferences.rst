@@ -8,7 +8,7 @@ This addon ads new preferences to the FreeCAD interface. They can be found all u
 
    Screenshot: the Grid Params Export preferences page, all four fields visible.
 
-- **"Grid export relative path"**: where **Export** writes files, relative to the current
+- **"Export relative path"**: where **Export** writes files, relative to the current
   document's own folder. Empty means the same folder as the document.
 - **"Preferred formats"**: a checkable list of export formats, built dynamically from
   whatever format any currently loaded FreeCAD module has registered (the same source FreeCAD's

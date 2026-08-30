@@ -71,7 +71,7 @@ Five buttons in the footer:
 Where files are written
 --------------------------
 
-The regular **Export** button writes to a folder resolved from the global "Grid export
+The regular **Export** button writes to a folder resolved from the global "Export
 relative path" preference (:doc:`preferences`), always **relative to the document's own
 folder**. As the preference page's own tooltip puts it:
 
