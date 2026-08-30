@@ -1,85 +1,46 @@
-# GridParamsExport
+# Grid Params Export
 
-A FreeCAD Addon for generating and batch-exporting multiple versions of a parametric model
-driven by an `App::VarSet`. Everything is managed with an interactive dialog: define a
-parameter grid, preview the resulting variations and their names, then export a selected set
-of objects per variation to files.
+Turn one parametric FreeCAD model into a whole family of exported files, in one click.
+
+Need a bracket in 5 lengths and 2 materials, exported to both STEP and STL? Grid Params Export
+defines that sweep once, on top of a plain `App::VarSet`, then handles applying every
+combination, recomputing the document, and exporting the 20 resulting files, correctly named
+and without touching the model by hand.
+
+[![Docs](https://github.com/MarcBresson/FreeCAD-Parametric-Export/actions/workflows/docs.yml/badge.svg)](https://github.com/MarcBresson/FreeCAD-Parametric-Export/actions/workflows/docs.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**[Read the full documentation](https://gridparamsexport.readthedocs.io)**: installation, a
+quickstart, a full tour of the dialog, and detailed guides.
 
 ![Grid Params Export dialog in FreeCAD](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/main-dialog.png)
 
-## Parameter grid model
+## Why you'll like it
 
-A grid is a list of **items**. Each item is one "sklearn `ParameterGrid`-style" dict of
-`{parameter_name: value}`, where a value can be:
+- A [scikit-learn `ParameterGrid`](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.ParameterGrid.html)-style
+  parameter grid, with `Fixed`, `List`, `LinSpace`, and `Range` value kinds.
+- Flexible naming templates, with duplicate-name protection before export runs.
+- A tree-based object picker that hides Body-internal features by default, showing only
+  finished, exportable parts.
+- Per-format export preferences: a global preferred-formats list, with an optional per-item
+  override and an enforce toggle.
+- Your VarSet's values are always restored after export, whether it succeeds or fails partway
+  through.
+- A VarSet-to-CSV export, handy for generating parameter documentation alongside your files.
+- Configuration is saved inside the document itself (no sidecar files), and a document can
+  hold more than one configuration, one per body, for example.
 
-- a fixed scalar (`Fixed`, or just type a plain value in the dialog)
-- an explicit list of values (`ValueList` / the "List" kind)
-- a deterministic range sampler (`LinSpace(start, stop, num)` or `Range(start, stop, step)`)
+## Getting started
 
-Every item is expanded independently via a full Cartesian product over its own parameters, and
-results across items are concatenated -- this mirrors `sklearn.model_selection.ParameterGrid`
-exactly (a dict expands to a cross-product; a list of dicts is independent alternatives, never
-crossed with each other).
+Install via FreeCAD's **Tools ▸ Addon Manager** (search "Grid Params Export"), then follow the
+[quickstart](https://gridparamsexport.readthedocs.io/en/latest/quickstart.html) to run your
+first export in a few minutes.
 
-## Naming
+## Contributing
 
-Each item has an optional name template; if left blank it falls back to the global default
-template. Template can be filled-in using parameters like `"{base_name} - CableLength{Base_CableLength}"`.
-If a template lacks a placeholder needed to distinguish multiple resulting combinations, the
-preview highlights the resulting duplicate names and "Export" refuses to run until it's
-fixed.
+See the [contributing guide](https://gridparamsexport.readthedocs.io/en/latest/contributing.html)
+for setting up a development install and running the test suite.
 
-![Grid definition and variations preview](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/variation-dialog.png)
+## License
 
-## Export Variations
-
-Pick objects via "Use Current Selection" (reads the current 3D view / tree selection), and
-choose "Combine into one file" or "One file per object".
-
-## Exporting VarSet parameters to CSV
-
-The "Export VarSet to CSV..." button next to the VarSet picker dumps every property of the
-selected `App::VarSet` (name, its property group, value, etc.) to a CSV file, handy for
-generating parameter documentation. Checkboxes let you pick which columns to include and
-whether to include "private" variables (those whose name *or* property group starts with
-`_`) along with a few other parameters.
-
-## Persistence
-
-The grid configuration is stored inside the document itself, in a hidden `GridParamsConfig`
-object's `ConfigJSON` property -- reopening the `.FCStd` file and reopening the dialog
-restores the last-used setup with no extra files to manage.
-
-The JSON is stamped with a `schema_version`. If a future release changes the saved shape, a
-migration function gets registered in `core/config.py`'s `_MIGRATIONS` table (keyed by the
-version it migrates *from*) and old documents upgrade automatically the next time they're
-opened -- no manual file editing. Opening a document saved by a *newer* addon version than the
-one currently installed shows a clear warning and falls back to a blank configuration rather
-than silently misreading it or crashing (the old saved config is left untouched in the document
-until you explicitly overwrite it with Save).
-
-The hidden `GridParamsConfig` object is still visible in the tree, where its context menu lets
-you reopen the dialog or trigger an export directly:
-
-![GridParamsConfig context menu in the tree view](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/left-column-dialog.png)
-
-## Installing (development)
-
-Symlink or copy this folder into your FreeCAD user `Mod/` directory, e.g. on macOS:
-
-```
-ln -s "$(pwd)" "$HOME/Library/Application Support/FreeCAD/Mod/GridParamsExport"
-```
-
-Restart FreeCAD; "New Grid Export Config..." appears in the Structure toolbar next to
-"Create a variable set", in any workbench that exposes it (Part, PartDesign, Draft, Arch/BIM,
-...).
-
-## Running the core tests
-
-The `gridparams.core` package has no dependency on `FreeCAD`/`FreeCADGui` and can be
-tested standalone:
-
-```
-python -m pytest tests/
-```
+[MIT](LICENSE)
