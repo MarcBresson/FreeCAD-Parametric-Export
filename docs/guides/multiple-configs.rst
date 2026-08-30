@@ -20,6 +20,8 @@ Right-clicking a configuration object in the tree gives you:
 .. figure:: ../_static/context-menu.png
    :alt: the right-click context menu on a Grid Params Config tree object
    :align: center
+   :width: 770px
+   :height: 698px
    :scale: 50 %
 
 - **"Edit..."**: opens the dialog for that configuration.

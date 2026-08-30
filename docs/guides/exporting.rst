@@ -100,6 +100,8 @@ your exported models.
 .. figure:: ../_static/csv-export-dialog.png
    :alt: the VarSet CSV export dialog, showing the column checkboxes
    :align: center
+   :width: 1000px
+   :height: 704px
    :scale: 50 %
 
 Checkboxes let you choose which columns to include, and whether to include "private"
