@@ -84,7 +84,7 @@ Preferences quick reference
 -------------------------------
 
 All four settings live under the FreeCAD parameter group
-``User parameter:BaseApp/Preferences/Mod/GridParams``.
+``User parameter:BaseApp/Preferences/Mod/CarteGrid``.
 
 .. list-table::
    :header-rows: 1

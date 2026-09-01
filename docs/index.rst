@@ -1,7 +1,12 @@
-Grid Params Export
+CarteGrid
 ===================
 
-**Grid Params Export** is a FreeCAD addon for batch-exporting parametrized variants of a
+.. figure:: ../Resources/logos/cartegrid-logo.png
+   :alt: CarteGrid logo
+   :align: center
+   :width: 200px
+
+**CarteGrid** is a FreeCAD addon for batch-exporting parametrized variants of a
 model. You define a parameter grid over an ``App::VarSet``'s properties, and the addon expands
 it into named **variations**: for each one, it applies the parameter values, recomputes the
 document, and exports a chosen set of objects to one or more files. Export formats are
@@ -14,7 +19,7 @@ workbench registers); nothing is hardcoded to a single format.
 
    The full dialog, with all panels and controls visible.
 
-Why Grid Params Export?
+Why CarteGrid?
 ------------------------
 
 - **A familiar parameter-grid model.** Grid items expand the same way
@@ -75,5 +80,5 @@ Get started with the :doc:`quickstart`, or jump straight to
    :maxdepth: 1
    :caption: Links
 
-   GitHub <https://github.com/MarcBresson/FreeCAD-Parametric-Export>
-   Issues <https://github.com/MarcBresson/FreeCAD-Parametric-Export/issues>
+   GitHub <https://github.com/MarcBresson/cartegrid>
+   Issues <https://github.com/MarcBresson/cartegrid/issues>

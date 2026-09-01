@@ -1,12 +1,12 @@
 Multiple configurations in one document
 ==========================================
 
-A single document can hold more than one Grid Params Export configuration. For example, one
+A single document can hold more than one CarteGrid configuration. For example, one
 per body in a multi-body assembly, each with its own grid and its own export settings.
-Clicking **"New Grid Export Config..."** again creates another one alongside any existing
+Clicking **"Batch Export from Varset..."** again creates another one alongside any existing
 configuration; it doesn't replace it.
 
-Each configuration is a normal object in the tree (labeled "Grid Params Config", auto-suffixed
+Each configuration is a normal object in the tree (labeled "CarteGrid Config", auto-suffixed
 if that label is already taken), just hidden from the 3D view since it has no geometry of its
 own.
 
@@ -18,7 +18,7 @@ The tree context menu
 Right-clicking a configuration object in the tree gives you:
 
 .. figure:: ../_static/context-menu.png
-   :alt: the right-click context menu on a Grid Params Config tree object
+   :alt: the right-click context menu on a CarteGrid Config tree object
    :align: center
    :width: 770px
    :height: 698px

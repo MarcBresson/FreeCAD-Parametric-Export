@@ -51,7 +51,7 @@ jobs:
       - name: Build release archive
         if: steps.check.outputs.skip == 'false'
         run: |
-          ARCHIVE_NAME="GridParamsExport-${{ steps.version.outputs.version }}.zip"
+          ARCHIVE_NAME="CarteGrid-${{ steps.version.outputs.version }}.zip"
           git archive --format=zip -o "$ARCHIVE_NAME" HEAD
           echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
 

@@ -1,7 +1,7 @@
 The main dialog, piece by piece
 ================================
 
-This page is a full tour of the Grid Params Export dialog: what every control is, and,
+This page is a full tour of the CarteGrid dialog: what every control is, and,
 critically, which ones only appear or become enabled under specific conditions. It exists so
 that when the dialog looks different from one moment to the next, you know why. For
 task-oriented instructions ("how do I get this filename pattern"), see the :doc:`guides
