@@ -1,7 +1,6 @@
 import FreeCADGui as Gui
 
-from freecad.gridparams import ICON_DIR
-from freecad.gridparams.gui import commands, preferences_page
+from freecad.gridparams.gui import ICON_DIR, commands, preferences_page
 from freecad.gridparams.gui.manipulator import GridParamsManipulator
 
 commands.register()

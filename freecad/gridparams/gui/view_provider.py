@@ -5,10 +5,9 @@ import os
 
 import FreeCADGui as Gui
 
-from freecad.gridparams import ICON_DIR
 from freecad.gridparams.core.config import ConfigSchemaError
 
-from . import persistence
+from . import ICON_DIR, persistence
 
 
 class ConfigContainerViewProxy:
