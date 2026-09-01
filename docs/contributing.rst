@@ -5,8 +5,8 @@ Development install
 -----------------------
 
 Same as a manual install (see :doc:`installation`): symlink this repository into FreeCAD's
-``Mod/`` folder and restart FreeCAD after each change to ``freecad/gridparams/init_gui.py`` or
-anything imported at startup. Most changes inside ``freecad/gridparams/gui/`` take effect after
+``Mod/`` folder and restart FreeCAD after each change to ``freecad/cartegrid/init_gui.py`` or
+anything imported at startup. Most changes inside ``freecad/cartegrid/gui/`` take effect after
 just reopening the dialog.
 
 Running the tests
@@ -16,7 +16,7 @@ Running the tests
 
    python -m pytest tests/
 
-The ``freecad.gridparams.core`` package has no dependency on ``FreeCAD``/``FreeCADGui`` at all
+The ``freecad.cartegrid.core`` package has no dependency on ``FreeCAD``/``FreeCADGui`` at all
 and is fully unit-tested standalone. The ``gui`` package is exercised through
 ``tests/conftest.py``'s stubbed ``FreeCAD``/``FreeCADGui`` modules and ``tests/fakes.py``'s
 duck-typed doubles, rather than a real FreeCAD install. If you're adding new behavior, prefer
@@ -38,9 +38,9 @@ Architecture
 
 The codebase is split into two packages with a clear boundary:
 
-- ``freecad/gridparams/core/``: pure Python, no ``FreeCAD``/``FreeCADGui`` import anywhere.
+- ``freecad/cartegrid/core/``: pure Python, no ``FreeCAD``/``FreeCADGui`` import anywhere.
   Grid expansion, naming, export planning, and persistence serialization all live here.
-- ``freecad/gridparams/gui/``: the Qt/FreeCADGui integration layer: dialogs, commands, the
+- ``freecad/cartegrid/gui/``: the Qt/FreeCADGui integration layer: dialogs, commands, the
   preferences page, and the toolbar manipulator. ``gui/runner.py`` is the seam where the two
   meet; it's the only place that both calls into ``core`` and talks to a live FreeCAD
   document.

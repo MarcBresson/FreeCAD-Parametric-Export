@@ -1,5 +1,5 @@
-from freecad.gridparams.core.grid import ParameterGrid
-from freecad.gridparams.core.values import Fixed, ValueList
+from freecad.cartegrid.core.grid import ParameterGrid
+from freecad.cartegrid.core.values import Fixed, ValueList
 
 
 def test_single_dict_cartesian_product():

@@ -1,11 +1,11 @@
-"""Tree behavior for a GridParams config container: double-click to edit, right-click to
+"""Tree behavior for a CarteGrid config container: double-click to edit, right-click to
 edit or run its saved export directly."""
 
 import os
 
 import FreeCADGui as Gui
 
-from freecad.gridparams.core.config import ConfigSchemaError
+from freecad.cartegrid.core.config import ConfigSchemaError
 
 from . import ICON_DIR, persistence
 
@@ -16,7 +16,7 @@ class ConfigContainerViewProxy:
         self.Object = vobj.Object
 
     def getIcon(self):
-        return os.path.join(ICON_DIR, "gridparams.svg")
+        return os.path.join(ICON_DIR, "favicon.svg")
 
     def doubleClicked(self, vobj):
         _edit_config(vobj.Object)
@@ -52,13 +52,13 @@ def _export_using_config(obj):
         config = persistence.load_config(obj)
     except ConfigSchemaError as exc:
         QtWidgets.QMessageBox.critical(
-            Gui.getMainWindow(), "GridParams", f"Could not load config: {exc}"
+            Gui.getMainWindow(), "CarteGrid", f"Could not load config: {exc}"
         )
         return
     if config is None:
         QtWidgets.QMessageBox.warning(
             Gui.getMainWindow(),
-            "GridParams",
+            "CarteGrid",
             "Nothing saved yet -- open Edit and Save first.",
         )
         return
@@ -76,13 +76,13 @@ def _export_to_folder(obj):
         config = persistence.load_config(obj)
     except ConfigSchemaError as exc:
         QtWidgets.QMessageBox.critical(
-            Gui.getMainWindow(), "GridParams", f"Could not load config: {exc}"
+            Gui.getMainWindow(), "CarteGrid", f"Could not load config: {exc}"
         )
         return
     if config is None:
         QtWidgets.QMessageBox.warning(
             Gui.getMainWindow(),
-            "GridParams",
+            "CarteGrid",
             "Nothing saved yet -- open Edit and Save first.",
         )
         return

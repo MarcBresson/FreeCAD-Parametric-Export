@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from freecad.gridparams.core.config import GridConfig, expand_config
-from freecad.gridparams.core.export_plan import build_export_jobs_for_variation
-from freecad.gridparams.core.variation import find_duplicate_names
+from freecad.cartegrid.core.config import GridConfig, expand_config
+from freecad.cartegrid.core.export_plan import build_export_jobs_for_variation
+from freecad.cartegrid.core.variation import find_duplicate_names
 
 from . import preferences
 from .format_registry import export_objects

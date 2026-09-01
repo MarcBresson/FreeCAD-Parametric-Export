@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from freecad.gridparams.core.config import (
+from freecad.cartegrid.core.config import (
     CONFIG_SCHEMA_VERSION,
     ConfigSchemaError,
     ExportSettings,
@@ -13,9 +13,9 @@ from freecad.gridparams.core.config import (
     config_to_json,
     expand_config,
 )
-from freecad.gridparams.core.export_plan import build_export_jobs_for_variation
-from freecad.gridparams.core.values import Fixed, LinSpace, ValueList
-from freecad.gridparams.core.variation import find_duplicate_names
+from freecad.cartegrid.core.export_plan import build_export_jobs_for_variation
+from freecad.cartegrid.core.values import Fixed, LinSpace, ValueList
+from freecad.cartegrid.core.variation import find_duplicate_names
 
 
 def test_macro_style_basic_list_no_sampler():

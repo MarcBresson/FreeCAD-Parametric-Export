@@ -9,16 +9,16 @@ with no separate name property to keep in sync.
 
 import json
 
-from freecad.gridparams.core.config import (
+from freecad.cartegrid.core.config import (
     CONFIG_SCHEMA_VERSION,
     config_from_json,
     config_to_json,
 )
 
-CONFIG_OBJECT_BASE_NAME = "GridParamsConfig"
+CONFIG_OBJECT_BASE_NAME = "CarteGridConfig"
 CONFIG_PROP = "ConfigJSON"
-CONFIG_MARKER_PROP = "IsGridParamsConfig"
-DEFAULT_CONFIG_LABEL = "Grid Params Config"
+CONFIG_MARKER_PROP = "IsCarteGridConfig"
+DEFAULT_CONFIG_LABEL = "CarteGrid Config"
 
 
 class ConfigContainerProxy:
@@ -57,13 +57,13 @@ def create_config_object(doc, label=None):
     obj.addProperty(
         "App::PropertyString",
         CONFIG_PROP,
-        "GridParams",
-        "Serialized GridParams configuration (JSON)",
+        "CarteGrid",
+        "Serialized CarteGrid configuration (JSON)",
     )
     obj.addProperty(
         "App::PropertyBool",
         CONFIG_MARKER_PROP,
-        "GridParams",
+        "CarteGrid",
         "Internal marker; do not edit",
         read_only=True,
         hidden=True,

@@ -2,8 +2,8 @@ import pytest
 
 from tests.fakes import FakeDocument
 
-from freecad.gridparams.core.config import GridConfig, GridItem
-from freecad.gridparams.gui import runner
+from freecad.cartegrid.core.config import GridConfig, GridItem
+from freecad.cartegrid.gui import runner
 
 
 def _make_varset(doc, **params):

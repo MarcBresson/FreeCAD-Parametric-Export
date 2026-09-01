@@ -19,8 +19,8 @@ def _read_version() -> str:
     return text.strip()
 
 
-html_title = "Grid Params Export"
-project = "Grid Params Export"
+html_title = "CarteGrid"
+project = "CarteGrid"
 author = "Marc Bresson"
 copyright = f"{date.today().year}, {author}"
 release = _read_version()
@@ -34,16 +34,16 @@ extensions = [
 
 todo_include_todos = True
 
-sphinx_github_changelog_root_repo = "MarcBresson/FreeCAD-Parametric-Export"
+sphinx_github_changelog_root_repo = "MarcBresson/cartegrid"
 
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_static_path = ["_static"]
 
 html_theme = "furo"
-html_logo = "../Resources/icons/gridparams.svg"
-html_favicon = "../Resources/icons/gridparams.svg"
+html_logo = "../Resources/icons/cartegrid.svg"
+html_favicon = "../Resources/icons/favicon.svg"
 html_theme_options = {
-    "source_repository": "https://github.com/MarcBresson/FreeCAD-Parametric-Export/",
+    "source_repository": "https://github.com/MarcBresson/cartegrid/",
     "source_branch": "main",
     "source_directory": "docs/",
 }

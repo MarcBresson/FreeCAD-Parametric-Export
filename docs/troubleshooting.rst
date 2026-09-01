@@ -6,7 +6,7 @@ A format I just enabled doesn't show up in the Formats list
 
 The list of available export formats is built once per FreeCAD session, from whatever formats
 are registered at that moment. If you loaded a new workbench (or add-on) that registers a
-format *after* first opening the Grid Params Export dialog, it won't appear until you restart
+format *after* first opening the CarteGrid dialog, it won't appear until you restart
 FreeCAD.
 
 .. _format-not-taking-effect:
@@ -14,7 +14,7 @@ FreeCAD.
 My per-item format choice doesn't seem to take effect
 -----------------------------------------------------------
 
-Check the global preference in **Edit ▸ Preferences ▸ Grid Params Export**: "Allow choosing
+Check the global preference in **Edit ▸ Preferences ▸ CarteGrid**: "Allow choosing
 export formats per grid item" must be on for a per-item override to apply at all. See the
 :ref:`full precedence table <format-precedence-table>` in :doc:`guides/preferences`.
 
@@ -40,7 +40,7 @@ take effect. See the :ref:`combine/split rules <combine-split-export>` in
 I get a warning that my saved configuration is newer than this addon supports
 ------------------------------------------------------------------------------------
 
-This happens if a document was last saved by a newer version of Grid Params Export than the
+This happens if a document was last saved by a newer version of CarteGrid than the
 one you currently have installed. The dialog falls back to a blank configuration for that
 session, but your actual saved data is left untouched; update the addon and reopen the
 document to get it back. See the :ref:`schema versioning <schema-versioning-section>` section

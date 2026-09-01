@@ -2,7 +2,7 @@ Quickstart
 ==========
 
 This walks through exporting a handful of parametrized variants of a model, end to end. It
-assumes you already have Grid Params Export :doc:`installed <installation>`.
+assumes you already have CarteGrid :doc:`installed <installation>`.
 
 1. Prerequisites
 -----------------
@@ -16,10 +16,10 @@ Open (or create) a FreeCAD document containing:
 2. Open the dialog
 --------------------
 
-Click **"New Grid Export Config..."** in the **Structure** toolbar.
+Click **"Batch Export from Varset..."** in the **Structure** toolbar.
 
 .. figure:: _static/toolbar-icon.png
-   :alt: the Structure toolbar with "New Grid Export Config..." visible next to "Create a variable set"
+   :alt: the Structure toolbar with "Batch Export from Varset..." visible next to "Create a variable set"
    :align: center
    :width: 520px
    :height: 82px
@@ -67,8 +67,8 @@ your naming template.
 ----------------------
 
 Look in your export folder for one file per resolved variation name. Open your VarSet's
-properties again: they're back to whatever they were before you clicked Export, Grid Params
-Export always restores them, whether the export succeeded or failed partway through. See
+properties again: they're back to whatever they were before you clicked Export, CarteGrid
+always restores them, whether the export succeeded or failed partway through. See
 :doc:`concepts/how-it-works` for why.
 
 .. seealso::

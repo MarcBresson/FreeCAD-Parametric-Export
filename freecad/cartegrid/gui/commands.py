@@ -5,15 +5,15 @@ import FreeCADGui as Gui
 
 from . import ICON_DIR
 
-COMMAND_NAME = "GridParamsExport_NewConfig"
+COMMAND_NAME = "CarteGrid_NewConfig"
 
 
-class CmdNewGridParamsConfig:
+class CmdNewCarteGridConfig:
     def GetResources(self):
         return {
-            "MenuText": "New Grid Export Config...",
+            "MenuText": "Batch Export from Varset...",
             "ToolTip": "Create a new parameter grid over a VarSet and batch-export the resulting variations",
-            "Pixmap": os.path.join(ICON_DIR, "gridparams.svg"),
+            "Pixmap": os.path.join(ICON_DIR, "favicon.svg"),
         }
 
     def IsActive(self):
@@ -31,4 +31,4 @@ class CmdNewGridParamsConfig:
 
 
 def register():
-    Gui.addCommand(COMMAND_NAME, CmdNewGridParamsConfig())
+    Gui.addCommand(COMMAND_NAME, CmdNewCarteGridConfig())

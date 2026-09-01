@@ -2,8 +2,8 @@ import json
 
 from tests.fakes import FakeDocument
 
-from freecad.gridparams.core.config import CONFIG_SCHEMA_VERSION, GridConfig
-from freecad.gridparams.gui import persistence
+from freecad.cartegrid.core.config import CONFIG_SCHEMA_VERSION, GridConfig
+from freecad.cartegrid.gui import persistence
 
 
 def test_create_config_object_adds_marker_and_json_property():

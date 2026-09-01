@@ -9,10 +9,10 @@ FreeCAD 1.1 or newer
 Option 1: FreeCAD's Addon Manager
 ----------------------------------
 
-Open **Tools ▸ Addon Manager** and search for "Grid Params Export". If it doesn't show up in
+Open **Tools ▸ Addon Manager** and search for "CarteGrid". If it doesn't show up in
 the curated list yet, you can still install it by adding this repository as a custom source:
 open the Addon Manager's configuration (the gear icon), add a **custom repository** pointing
-at ``https://github.com/MarcBresson/FreeCAD-Parametric-Export``, and it will appear in your
+at ``https://github.com/MarcBresson/cartegrid``, and it will appear in your
 addon list like any other.
 
 Option 2: manual install
@@ -41,7 +41,7 @@ On macOS, for example:
 
 .. code-block:: bash
 
-   ln -s "$(pwd)" "$HOME/Library/Application Support/FreeCAD/Mod/GridParamsExport"
+   ln -s "$(pwd)" "$HOME/Library/Application Support/FreeCAD/Mod/CarteGrid"
 
 .. note::
 
@@ -52,7 +52,7 @@ On macOS, for example:
 Verifying the install
 ----------------------
 
-Restart FreeCAD, open (or create) a document, and look for **"New Grid Export Config..."** in
+Restart FreeCAD, open (or create) a document, and look for **"Batch Export from Varset..."** in
 the **Structure** toolbar, next to "Create a variable set". It's available in any workbench
 that exposes that toolbar (Part, PartDesign, Draft, Arch/BIM, ...).
 

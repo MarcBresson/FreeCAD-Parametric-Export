@@ -1,7 +1,7 @@
 Where your configuration lives
 =================================
 
-Every Grid Params Export configuration is saved as JSON inside a hidden data object in the
+Every CarteGrid configuration is saved as JSON inside a hidden data object in the
 ``.FCStd`` file itself; there are no sidecar files to lose track of, and copying or sharing
 the document takes your grid configuration with it automatically.
 

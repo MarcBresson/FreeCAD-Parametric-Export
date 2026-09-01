@@ -1,19 +1,23 @@
-# Grid Params Export
+<p align="center">
+  <img src="https://media.githubusercontent.com/media/MarcBresson/cartegrid/refs/heads/main/Resources/logos/cartegrid-logo.png" alt="CarteGrid logo" width="200">
+</p>
+
+# CarteGrid
 
 Turn one parametric FreeCAD model into a whole family of exported files, in one click.
 
-Need a bracket in 5 lengths and 2 materials, exported to both STEP and STL? Grid Params Export
+Need a bracket in 5 lengths and 2 materials, exported to both STEP and STL? CarteGrid
 defines that sweep once, on top of a plain `App::VarSet`, then handles applying every
 combination, recomputing the document, and exporting the 20 resulting files, correctly named
 and without touching the model by hand.
 
-[![Docs](https://github.com/MarcBresson/FreeCAD-Parametric-Export/actions/workflows/docs.yml/badge.svg)](https://github.com/MarcBresson/FreeCAD-Parametric-Export/actions/workflows/docs.yml)
+[![Docs](https://github.com/MarcBresson/cartegrid/actions/workflows/docs.yml/badge.svg)](https://github.com/MarcBresson/cartegrid/actions/workflows/docs.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**[Read the full documentation](https://gridparamsexport.readthedocs.io)**: installation, a
+**[Read the full documentation](https://cartegrid.readthedocs.io)**: installation, a
 quickstart, a full tour of the dialog, and detailed guides.
 
-![Grid Params Export dialog in FreeCAD](https://media.githubusercontent.com/media/MarcBresson/FreeCAD-Parametric-Export/refs/heads/main/Resources/Media/main-dialog.png)
+![CarteGrid dialog in FreeCAD](https://media.githubusercontent.com/media/MarcBresson/cartegrid/refs/heads/main/Resources/Media/main-dialog.png)
 
 ## Why you'll like it
 
@@ -32,13 +36,13 @@ quickstart, a full tour of the dialog, and detailed guides.
 
 ## Getting started
 
-Install via FreeCAD's **Tools ▸ Addon Manager** (search "Grid Params Export"), then follow the
-[quickstart](https://gridparamsexport.readthedocs.io/en/latest/quickstart.html) to run your
+Install via FreeCAD's **Tools ▸ Addon Manager** (search "CarteGrid"), then follow the
+[quickstart](https://cartegrid.readthedocs.io/en/latest/quickstart.html) to run your
 first export in a few minutes.
 
 ## Contributing
 
-See the [contributing guide](https://gridparamsexport.readthedocs.io/en/latest/contributing.html)
+See the [contributing guide](https://cartegrid.readthedocs.io/en/latest/contributing.html)
 for setting up a development install and running the test suite.
 
 ## License
