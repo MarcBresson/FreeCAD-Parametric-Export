@@ -12,8 +12,8 @@
   <license file="LICENSE">MIT</license>
   <url type="repository" branch="main">https://github.com/MarcBresson/cartegrid</url>
   <url type="bugtracker">https://github.com/MarcBresson/cartegrid/issues</url>
-  <url type="readme">
-    https://raw.githubusercontent.com/MarcBresson/cartegrid/main/README.md</url>
+  <url type="documentation">https://cartegrid.readthedocs.io/</url>
+  <url type="readme">https://github.com/MarcBresson/CarteGrid/blob/main/README.md</url>
   <icon>Resources/icons/favicon.svg</icon>
   <content>
     <other />
