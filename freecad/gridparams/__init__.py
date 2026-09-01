@@ -1,6 +1,7 @@
-import os
+"""Entry point for the addon (headless mode).
 
-ADDON_ROOT = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
-ICON_DIR = os.path.join(ADDON_ROOT, "Resources", "icons")
+This file is loaded once during FreeCAD initialization if the addon is not disabled. It
+runs in headless mode, so no Gui imports or calls are allowed here.
+
+Keep this file fast -- it runs on every FreeCAD startup.
+"""

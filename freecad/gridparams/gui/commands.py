@@ -3,7 +3,7 @@ import os
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from freecad.gridparams import ICON_DIR
+from . import ICON_DIR
 
 COMMAND_NAME = "GridParamsExport_NewConfig"
 
