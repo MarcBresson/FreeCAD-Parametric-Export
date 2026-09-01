@@ -5,9 +5,9 @@ Development install
 -----------------------
 
 Same as a manual install (see :doc:`installation`): symlink this repository into FreeCAD's
-``Mod/`` folder and restart FreeCAD after each change to ``InitGui.py`` or anything imported at
-startup. Most changes inside ``freecad/gridparams/gui/`` take effect after just reopening the
-dialog.
+``Mod/`` folder and restart FreeCAD after each change to ``freecad/gridparams/init_gui.py`` or
+anything imported at startup. Most changes inside ``freecad/gridparams/gui/`` take effect after
+just reopening the dialog.
 
 Running the tests
 ---------------------
