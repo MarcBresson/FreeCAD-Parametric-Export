@@ -50,7 +50,7 @@ Building these docs locally
 
 .. code-block:: bash
 
-   pip install -r docs/requirements.txt
+   pip install -r docs/docs-requirements.txt
    sphinx-build -b html docs docs/_build/html
 
 Then open ``docs/_build/html/index.html``.
