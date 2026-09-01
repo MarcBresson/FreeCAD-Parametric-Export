@@ -1,4 +1,4 @@
-"""The Qt preferences page (Edit > Preferences > Grid Params Export), registered with
+"""The Qt preferences page (Edit > Preferences > CarteGrid), registered with
 FreeCADGui.addPreferencePage. Split from `preferences.py` so the getters/setters/format
 resolution there can be imported and tested without a Qt installation."""
 
@@ -43,7 +43,7 @@ def _make_card() -> tuple[QtWidgets.QFrame, QtWidgets.QFormLayout]:
     return card, form
 
 
-class GridParamsPreferencesPage(QtWidgets.QWidget):
+class CarteGridPreferencesPage(QtWidgets.QWidget):
     """Registered with FreeCADGui.addPreferencePage; must implement loadSettings/saveSettings."""
 
     def __init__(self, parent=None):
@@ -104,7 +104,7 @@ class GridParamsPreferencesPage(QtWidgets.QWidget):
             "Allow choosing export formats per grid item"
         )
         self.allow_per_item_checkbox.setToolTip(
-            "When checked, the Grid Params dialog shows a per-item format picker that "
+            "When checked, the CarteGrid dialog shows a per-item format picker that "
             "overrides the preferred formats above for that item."
         )
         allow_form.addRow(self.allow_per_item_checkbox)

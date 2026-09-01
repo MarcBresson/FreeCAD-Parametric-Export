@@ -1,6 +1,6 @@
 from tests.fakes import FakeDocument, consume, group
 
-from freecad.gridparams.gui import object_tree
+from freecad.cartegrid.gui import object_tree
 
 
 def test_is_intermediate_true_for_body_internal_feature():

@@ -1,6 +1,6 @@
 import pytest
 
-from freecad.gridparams.core.naming import NamingTemplateError, resolve_name
+from freecad.cartegrid.core.naming import NamingTemplateError, resolve_name
 
 
 def test_literal_name_resolves_unchanged():

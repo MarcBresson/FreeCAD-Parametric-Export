@@ -1,22 +1,22 @@
-"""The GridParams dialog: build a parameter grid, preview resulting variations, and run export.
+"""The CarteGrid dialog: build a parameter grid, preview resulting variations, and run export.
 
-All expansion/naming/export-planning logic is delegated to gridparams.core -- this
+All expansion/naming/export-planning logic is delegated to cartegrid.core -- this
 module only translates between Qt widgets and that core's dataclasses.
 """
 
 from PySide import QtCore, QtGui, QtWidgets
 
 import FreeCAD as App
-from freecad.gridparams.core.config import (
+from freecad.cartegrid.core.config import (
     ConfigSchemaError,
     ExportSettings,
     GridConfig,
     GridItem,
     expand_config,
 )
-from freecad.gridparams.core.values import Fixed, LinSpace, Range, ValueList
-from freecad.gridparams.core.variation import find_duplicate_names
-from freecad.gridparams.core.varset_export import VarSetCsvOptions
+from freecad.cartegrid.core.values import Fixed, LinSpace, Range, ValueList
+from freecad.cartegrid.core.variation import find_duplicate_names
+from freecad.cartegrid.core.varset_export import VarSetCsvOptions
 
 from . import (
     export_helpers,
@@ -212,7 +212,7 @@ class ObjectPickerDialog(QtWidgets.QDialog):
             )
             if obj is None:
                 QtWidgets.QMessageBox.warning(
-                    self, "GridParams", f"No object found named or labeled {text!r}."
+                    self, "CarteGrid", f"No object found named or labeled {text!r}."
                 )
                 return
             self._resolved_manual_name = obj.Name
@@ -268,7 +268,7 @@ class FormatPickerDialog(QtWidgets.QDialog):
         ]
 
 
-class GridParamsDialog(QtWidgets.QDialog):
+class CarteGridDialog(QtWidgets.QDialog):
     def __init__(self, doc, config_object_name, parent=None):
         super().__init__(parent)
         self.doc = doc
@@ -287,7 +287,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         except ConfigSchemaError as exc:
             QtWidgets.QMessageBox.warning(
                 self,
-                "GridParams",
+                "CarteGrid",
                 f"Could not load saved grid configuration: {exc}\n\n"
                 "Starting from a blank configuration instead -- the previously saved one is "
                 "left untouched in the document until you explicitly Save over it.",
@@ -295,7 +295,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             config = GridConfig(base_name=doc.Label)
         self._items = list(config.items)
 
-        self.setWindowTitle(f"Grid Params Export — {config_obj.Label}")
+        self.setWindowTitle(f"CarteGrid — {config_obj.Label}")
         self._build_ui()
         self._load_from_config(config)
 
@@ -303,7 +303,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         obj = persistence.get_config_object(self.doc, self.config_object_name)
         if obj is None:
             raise RuntimeError(
-                f"GridParams config object {self.config_object_name!r} no longer exists."
+                f"CarteGrid config object {self.config_object_name!r} no longer exists."
             )
         return obj
 
@@ -449,7 +449,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             "single output file.\n"
             '"One file per part" exports each part as its own file, using the part\'s '
             "body label to keep the filenames unique (filename template configurable in "
-            "Edit > Preferences > Grid Params Export)."
+            "Edit > Preferences > CarteGrid)."
         )
 
         self.multi_part_row_widget = QtWidgets.QWidget()
@@ -613,7 +613,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             return
         if len(self._items) <= 1:
             QtWidgets.QMessageBox.warning(
-                self, "GridParams", "At least one item is required."
+                self, "CarteGrid", "At least one item is required."
             )
             return
         del self._items[row]
@@ -817,7 +817,7 @@ class GridParamsDialog(QtWidgets.QDialog):
             config = self._build_config_from_widgets()
             variations = expand_config(config, document_label=self.doc.Label)
         except Exception as exc:
-            QtWidgets.QMessageBox.critical(self, "GridParams", f"Error: {exc}")
+            QtWidgets.QMessageBox.critical(self, "CarteGrid", f"Error: {exc}")
             return
         duplicates = set(find_duplicate_names(variations))
         VariationsDialog(variations, duplicates, self).exec()
@@ -828,7 +828,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         names = selection.get_selected_object_names()
         if not names:
             QtWidgets.QMessageBox.warning(
-                self, "GridParams", "Nothing selected in the 3D view / tree."
+                self, "CarteGrid", "Nothing selected in the 3D view / tree."
             )
             return
         self._selected_object_names = names
@@ -874,7 +874,7 @@ class GridParamsDialog(QtWidgets.QDialog):
         varset = self.doc.getObject(self.varset_combo.currentText())
         if varset is None:
             QtWidgets.QMessageBox.warning(
-                self, "GridParams", "Select a VarSet to export first."
+                self, "CarteGrid", "Select a VarSet to export first."
             )
             return
         properties = varset_export.collect_properties(varset)
@@ -898,7 +898,7 @@ class GridParamsDialog(QtWidgets.QDialog):
     def _on_save(self):
         self._save_config()
         QtWidgets.QMessageBox.information(
-            self, "GridParams", "Configuration saved to document."
+            self, "CarteGrid", "Configuration saved to document."
         )
 
     def _on_save_and_close(self):
@@ -929,12 +929,12 @@ class GridParamsDialog(QtWidgets.QDialog):
 
 # -- Open-dialog tracking --------------------------------------------------
 #
-# Keeps at most one GridParamsDialog per (document, config object) so that
+# Keeps at most one CarteGridDialog per (document, config object) so that
 # double-clicking/re-invoking the same config brings the existing dialog to
 # front instead of opening a conflicting duplicate, and so that closing a
 # document can close whichever of its dialogs are still open.
 
-_open_dialogs: dict[tuple[str, str], GridParamsDialog] = {}
+_open_dialogs: dict[tuple[str, str], CarteGridDialog] = {}
 _document_observer_registered = False
 
 
@@ -961,7 +961,7 @@ def _ensure_document_observer_registered():
 
 
 def open_or_focus(doc, config_object_name, parent=None):
-    """Show the GridParamsDialog for (doc, config_object_name).
+    """Show the CarteGridDialog for (doc, config_object_name).
 
     Reuses and raises an already-open dialog for the same config object instead of
     opening a second, conflicting one.
@@ -979,7 +979,7 @@ def open_or_focus(doc, config_object_name, parent=None):
         except RuntimeError:
             _open_dialogs.pop(key, None)  # underlying Qt widget was already destroyed
 
-    dialog = GridParamsDialog(doc, config_object_name, parent=parent)
+    dialog = CarteGridDialog(doc, config_object_name, parent=parent)
     _open_dialogs[key] = dialog
     dialog.show()
     return dialog

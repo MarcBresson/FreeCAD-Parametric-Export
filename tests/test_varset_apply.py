@@ -1,7 +1,7 @@
 from tests.fakes import FakeDocument
 
-from freecad.gridparams.core.variation import Variation
-from freecad.gridparams.gui.varset_apply import (
+from freecad.cartegrid.core.variation import Variation
+from freecad.cartegrid.gui.varset_apply import (
     apply_variation,
     capture_params,
     restore_params,

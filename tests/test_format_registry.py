@@ -2,7 +2,7 @@ import types
 
 import pytest
 
-from freecad.gridparams.gui import format_registry
+from freecad.cartegrid.gui import format_registry
 
 
 @pytest.fixture(autouse=True)

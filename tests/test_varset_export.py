@@ -1,4 +1,4 @@
-from freecad.gridparams.core.varset_export import (
+from freecad.cartegrid.core.varset_export import (
     PropertyInfo,
     VarSetCsvOptions,
     filter_properties,

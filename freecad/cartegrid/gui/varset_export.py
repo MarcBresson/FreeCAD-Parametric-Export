@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PySide import QtWidgets
 
-from freecad.gridparams.core.varset_export import (
+from freecad.cartegrid.core.varset_export import (
     PropertyInfo,
     VarSetCsvOptions,
     filter_properties,
@@ -144,12 +144,12 @@ class VarSetCsvExportDialog(QtWidgets.QDialog):
             )
         except OSError as exc:
             QtWidgets.QMessageBox.critical(
-                self, "GridParams", f"Could not write CSV file: {exc}"
+                self, "CarteGrid", f"Could not write CSV file: {exc}"
             )
             return
 
         exported_count = len(filter_properties(self.properties, self.options))
         QtWidgets.QMessageBox.information(
-            self, "GridParams", f"Exported {exported_count} parameter(s) to {path}"
+            self, "CarteGrid", f"Exported {exported_count} parameter(s) to {path}"
         )
         self.accept()

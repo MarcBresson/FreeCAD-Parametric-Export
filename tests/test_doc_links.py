@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from freecad.gridparams.gui import doc_links
+from freecad.cartegrid.gui import doc_links
 
 PREFERENCES_RST = Path(__file__).parent.parent / "docs" / "guides" / "preferences.rst"
 

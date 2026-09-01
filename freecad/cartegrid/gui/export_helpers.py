@@ -9,14 +9,14 @@ from pathlib import Path
 
 from PySide import QtCore, QtWidgets
 
-from freecad.gridparams.core.config import expand_config
-from freecad.gridparams.core.variation import find_duplicate_names
+from freecad.cartegrid.core.config import expand_config
+from freecad.cartegrid.core.variation import find_duplicate_names
 
 from . import format_registry, preferences, runner
 
 
 def _report_error(parent, message):
-    QtWidgets.QMessageBox.critical(parent, "GridParams", message)
+    QtWidgets.QMessageBox.critical(parent, "CarteGrid", message)
 
 
 def _validate_variations(config, parent, document_label):
@@ -110,7 +110,7 @@ def _export_to_resolved_folder(
 
     _close_progress(progress, disable_widget)
     QtWidgets.QMessageBox.information(
-        parent, "GridParams", f"Exported {len(written)} file(s) to {output_folder}"
+        parent, "CarteGrid", f"Exported {len(written)} file(s) to {output_folder}"
     )
     return True
 

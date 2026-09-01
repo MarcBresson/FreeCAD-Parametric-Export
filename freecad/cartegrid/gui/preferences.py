@@ -1,4 +1,4 @@
-"""Global add-on preferences (Edit > Preferences > Grid Params Export).
+"""Global add-on preferences (Edit > Preferences > CarteGrid).
 
 The export folder used to be a per-document setting typed into the export dialog and saved
 inside the .FCStd file, which meant an absolute (or even relative) filesystem path could leak
@@ -14,7 +14,7 @@ import FreeCAD as App
 
 from ..core.export_plan import DEFAULT_BODY_NAME_TEMPLATE
 
-PARAM_GROUP = "User parameter:BaseApp/Preferences/Mod/GridParams"
+PARAM_GROUP = "User parameter:BaseApp/Preferences/Mod/CarteGrid"
 EXPORT_RELATIVE_PATH_KEY = "ExportRelativePath"
 PREFERRED_FORMATS_KEY = "PreferredFormats"
 ALLOW_PER_ITEM_FORMATS_KEY = "AllowPerItemFormats"

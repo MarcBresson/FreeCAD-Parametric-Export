@@ -1,13 +1,13 @@
 import pytest
 
-from freecad.gridparams.core.config import ExportSettings
-from freecad.gridparams.core.export_plan import (
+from freecad.cartegrid.core.config import ExportSettings
+from freecad.cartegrid.core.export_plan import (
     apply_body_name_template,
     build_export_jobs_for_variation,
     sanitize_filename,
 )
-from freecad.gridparams.core.naming import NamingTemplateError, resolve_name
-from freecad.gridparams.core.variation import Variation
+from freecad.cartegrid.core.naming import NamingTemplateError, resolve_name
+from freecad.cartegrid.core.variation import Variation
 
 
 def _templated_variation(template, base_name="Base", params=None):

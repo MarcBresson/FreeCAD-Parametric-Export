@@ -69,7 +69,7 @@ def apply_migrations(
     if version > current_version:
         raise ConfigSchemaError(
             f"Saved grid config is schema_version {version}, newer than this addon supports "
-            f"(max {current_version}). Update the GridParamsExport addon to open it."
+            f"(max {current_version}). Update the CarteGrid addon to open it."
         )
     while version < current_version:
         migrate = migrations.get(version)

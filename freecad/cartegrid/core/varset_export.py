@@ -1,5 +1,5 @@
 """Turn a VarSet's properties into CSV text. Pure Python -- no FreeCAD import -- so it is
-unit-testable the same way as the rest of gridparams.core.
+unit-testable the same way as the rest of cartegrid.core.
 """
 
 import csv

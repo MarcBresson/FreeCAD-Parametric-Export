@@ -1,4 +1,4 @@
-from freecad.gridparams.core.values import (
+from freecad.cartegrid.core.values import (
     Fixed,
     LinSpace,
     Range,
