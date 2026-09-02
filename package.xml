@@ -5,15 +5,15 @@
     format FreeCAD itself can produce. Define a parameter grid over an App::VarSet
     (ParameterGrid-style, similar to scikit-learn), preview the resulting variations and their
     names, then export a chosen set of objects per variation.</description>
-  <version>1.3.0</version>
+  <version>1.3.1</version>
   <date>2026-07-08</date>
   <maintainer email="m.bresson@mailo.eu">Marc Bresson</maintainer>
   <author email="m.bresson@mailo.eu">Marc Bresson</author>
   <license file="LICENSE">MIT</license>
   <url type="repository" branch="main">https://github.com/MarcBresson/cartegrid</url>
   <url type="bugtracker">https://github.com/MarcBresson/cartegrid/issues</url>
-  <url type="readme">
-    https://raw.githubusercontent.com/MarcBresson/cartegrid/main/README.md</url>
+  <url type="documentation">https://cartegrid.readthedocs.io/</url>
+  <url type="readme">https://github.com/MarcBresson/CarteGrid/blob/main/README.md</url>
   <icon>Resources/icons/favicon.svg</icon>
   <content>
     <other />
